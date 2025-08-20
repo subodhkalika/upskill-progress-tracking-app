@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { TaskInput } from '../interfaces/task';
 
 export const createTask = async (request: FastifyRequest<{ Body: TaskInput }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { title, resourceId } = request.body;
   try {
     const newTask = await request.server.prisma.task.create({
@@ -20,7 +20,7 @@ export const createTask = async (request: FastifyRequest<{ Body: TaskInput }>, r
 };
 
 export const getTasks = async (request: FastifyRequest, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   try {
     const tasks = await request.server.prisma.task.findMany({
       where: { userId },
@@ -34,7 +34,7 @@ export const getTasks = async (request: FastifyRequest, reply: FastifyReply) => 
 };
 
 export const getTask = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const task = await request.server.prisma.task.findFirst({
@@ -51,7 +51,7 @@ export const getTask = async (request: FastifyRequest<{ Params: { id: string } }
 };
 
 export const updateTask = async (request: FastifyRequest<{ Params: { id: string }, Body: Partial<TaskInput> }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   const updateData = request.body;
   try {
@@ -70,7 +70,7 @@ export const updateTask = async (request: FastifyRequest<{ Params: { id: string 
 };
 
 export const deleteTask = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const task = await request.server.prisma.task.deleteMany({

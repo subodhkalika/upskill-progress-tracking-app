@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
 const roadmapHandlers = __importStar(require("../handlers/roadmaps"));
 async function default_1(fastify) {
-    fastify.post('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, roadmapHandlers.createRoadmap);
-    fastify.get('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, roadmapHandlers.getRoadmaps);
-    fastify.get('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, roadmapHandlers.getRoadmap);
-    fastify.put('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, roadmapHandlers.updateRoadmap);
-    fastify.delete('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, roadmapHandlers.deleteRoadmap);
+    fastify.post('/', { preHandler: [fastify.authenticate] }, roadmapHandlers.createRoadmap);
+    fastify.get('/', { preHandler: [fastify.authenticate] }, roadmapHandlers.getRoadmaps);
+    fastify.get('/:id', { preHandler: [fastify.authenticate] }, roadmapHandlers.getRoadmap);
+    fastify.put('/:id', { preHandler: [fastify.authenticate] }, roadmapHandlers.updateRoadmap);
+    fastify.delete('/:id', { preHandler: [fastify.authenticate] }, roadmapHandlers.deleteRoadmap);
 }

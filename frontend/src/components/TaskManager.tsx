@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { 
   Plus, 
   Search, 
@@ -10,7 +11,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
 import { Checkbox } from './ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
@@ -21,100 +21,98 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { useState } from 'react';
+import { fetchTasks, createTask, updateTask, deleteTask } from '../services/api';
+import { Skeleton } from './ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import { Label } from './ui/label';
 
 export function TaskManager() {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const tasks = [
-    {
-      id: 1,
-      title: 'Complete REST API Authentication module',
-      description: 'Implement JWT-based authentication with refresh tokens',
-      roadmap: 'Backend Development',
-      dueDate: 'Today',
-      priority: 'high',
-      status: 'pending',
-      tags: ['API', 'Security'],
-      estimatedTime: '2h',
-      progress: 0
-    },
-    {
-      id: 2,
-      title: 'Watch Docker fundamentals video series',
-      description: 'Complete chapters 1-3 on containerization basics',
-      roadmap: 'DevOps Pipeline',
-      dueDate: 'Tomorrow',
-      priority: 'medium',
-      status: 'in-progress',
-      tags: ['Docker', 'Video'],
-      estimatedTime: '1.5h',
-      progress: 60
-    },
-    {
-      id: 3,
-      title: 'Read System Design Interview book - Ch 4',
-      description: 'Rate limiting and load balancing concepts',
-      roadmap: 'System Design',
-      dueDate: 'Dec 28',
-      priority: 'medium',
-      status: 'pending',
-      tags: ['Reading', 'System Design'],
-      estimatedTime: '45min',
-      progress: 0
-    },
-    {
-      id: 4,
-      title: 'Implement AWS S3 file upload feature',
-      description: 'Add file upload with progress tracking and error handling',
-      roadmap: 'Cloud Architecture',
-      dueDate: 'Dec 30',
-      priority: 'low',
-      status: 'completed',
-      tags: ['AWS', 'Hands-on'],
-      estimatedTime: '3h',
-      progress: 100
-    },
-    {
-      id: 5,
-      title: 'Practice LeetCode problems - Arrays',
-      description: 'Solve 5 medium-level array problems and understand patterns',
-      roadmap: 'Algorithm Practice',
-      dueDate: 'Jan 2',
-      priority: 'low',
-      status: 'pending',
-      tags: ['Coding', 'Practice'],
-      estimatedTime: '2h',
-      progress: 0
-    },
-    {
-      id: 6,
-      title: 'Build React component library',
-      description: 'Create reusable components with TypeScript and Storybook',
-      roadmap: 'Frontend Development',
-      dueDate: 'Next week',
-      priority: 'high',
-      status: 'in-progress',
-      tags: ['React', 'TypeScript'],
-      estimatedTime: '4h',
-      progress: 25
-    }
-  ];
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '' });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        // We need a way to get the milestoneId here.
+        // For now, I'll pass a dummy one.
+        const data = await fetchTasks('dummy-milestone-id');
+        setTasks(data);
+      } catch (err) {
+        setError('Failed to load tasks.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
+
+  const handleCreateTask = async () => {
+    try {
+      const createdTask = await createTask(newTask);
+      setTasks([...tasks, createdTask]);
+      setOpenCreateDialog(false);
+      setNewTask({ title: '' });
+    } catch (err) {
+      setError('Failed to create task.');
     }
   };
 
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      setTasks(tasks.filter((t) => t.id !== id));
+    } catch (err) {
+      setError('Failed to delete task.');
+    }
+  };
 
+  const handleToggleComplete = async (task: any) => {
+    try {
+      const updatedTask = await updateTask(task.id, { completed: !task.completed });
+      setTasks(tasks.map((t) => (t.id === task.id ? updatedTask : t)));
+    } catch (err) {
+      setError('Failed to update task.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 space-y-6">
+        <Skeleton className="h-8 w-1/2 mb-6" />
+        <div className="space-y-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-500">{error}</div>;
+  }
+
+  
 
   const filterTasks = (status: string) => {
     if (status === 'all') return tasks;
-    return tasks.filter(task => task.status === status);
+    if (status === 'pending') return tasks.filter(task => !task.completed);
+    if (status === 'completed') return tasks.filter(task => task.completed);
+    return [];
   };
 
   const TaskCard = ({ task }: { task: any }) => (
@@ -123,7 +121,8 @@ export function TaskManager() {
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0 mt-1">
             <Checkbox 
-              checked={task.status === 'completed'}
+              checked={task.completed}
+              onCheckedChange={() => handleToggleComplete(task)}
               className="w-5 h-5"
             />
           </div>
@@ -131,10 +130,9 @@ export function TaskManager() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 mr-4">
-                <h3 className={`font-medium text-base lg:text-lg mb-2 ${task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                <h3 className={`font-medium text-base lg:text-lg mb-2 ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                   {task.title}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
               </div>
               
               <DropdownMenu>
@@ -147,56 +145,9 @@ export function TaskManager() {
                   <DropdownMenuItem>Edit Task</DropdownMenuItem>
                   <DropdownMenuItem>Duplicate</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                  <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteTask(task.id)}>Delete</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="outline" className="text-xs">
-                {task.roadmap}
-              </Badge>
-              <Badge className={`text-xs border ${getPriorityColor(task.priority)}`} variant="outline">
-                {task.priority} priority
-              </Badge>
-            </div>
-
-            {task.status === 'in-progress' && task.progress > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium">{task.progress}%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${task.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between text-sm gap-2 lg:gap-0">
-              <div className="flex items-center space-x-4 lg:space-x-6 text-muted-foreground">
-                <span className="flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {task.dueDate}
-                </span>
-                <span className="flex items-center">
-                  <Clock className="w-4 h-4 mr-2" />
-                  {task.estimatedTime}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between lg:justify-end space-x-2">
-                <div className="flex items-center space-x-1 lg:mr-2">
-                  {task.tags.slice(0, 2).map((tag: string, index: number) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -212,10 +163,38 @@ export function TaskManager() {
           <h1 className="text-2xl lg:text-3xl font-semibold text-foreground mb-2">Task Manager</h1>
           <p className="text-muted-foreground">Organize and track your learning tasks</p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
+        <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create a new task</DialogTitle>
+              <DialogDescription>
+                Add a new task to your list.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleCreateTask}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {/* Toolbar */}
@@ -270,25 +249,25 @@ export function TaskManager() {
       <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">18</div>
+            <div className="text-2xl font-bold text-foreground">{tasks.length}</div>
             <div className="text-sm text-muted-foreground">Total Tasks</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">12</div>
+            <div className="text-2xl font-bold text-orange-600">{filterTasks('pending').length}</div>
             <div className="text-sm text-muted-foreground">Pending</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">4</div>
+            <div className="text-2xl font-bold text-blue-600">0</div>
             <div className="text-sm text-muted-foreground">In Progress</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">8</div>
+            <div className="text-2xl font-bold text-green-600">{filterTasks('completed').length}</div>
             <div className="text-sm text-muted-foreground">Completed</div>
           </CardContent>
         </Card>
@@ -302,7 +281,6 @@ export function TaskManager() {
             <TabsList className="mb-6 w-full lg:w-auto">
               <TabsTrigger value="all">All Tasks</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="in-progress">In Progress</TabsTrigger>
               <TabsTrigger value="completed">Completed</TabsTrigger>
             </TabsList>
             
@@ -310,9 +288,7 @@ export function TaskManager() {
               <div className="space-y-4">
                 {tasks
                   .filter(task => 
-                    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    task.roadmap.toLowerCase().includes(searchQuery.toLowerCase())
+                    task.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(task => <TaskCard key={task.id} task={task} />)}
               </div>
@@ -322,19 +298,7 @@ export function TaskManager() {
               <div className="space-y-4">
                 {filterTasks('pending')
                   .filter(task => 
-                    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    task.description.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map(task => <TaskCard key={task.id} task={task} />)}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="in-progress" className="mt-0">
-              <div className="space-y-4">
-                {filterTasks('in-progress')
-                  .filter(task => 
-                    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    task.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    task.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(task => <TaskCard key={task.id} task={task} />)}
               </div>
@@ -344,8 +308,7 @@ export function TaskManager() {
               <div className="space-y-4">
                 {filterTasks('completed')
                   .filter(task => 
-                    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    task.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    task.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(task => <TaskCard key={task.id} task={task} />)}
               </div>
@@ -366,15 +329,15 @@ export function TaskManager() {
               <div className="space-y-3">
                 <div className="text-sm">
                   <div className="font-medium text-foreground">Today</div>
-                  <div className="text-muted-foreground">2 tasks due</div>
+                  <div className="text-muted-foreground">0 tasks due</div>
                 </div>
                 <div className="text-sm">
                   <div className="font-medium text-foreground">Tomorrow</div>
-                  <div className="text-muted-foreground">1 task due</div>
+                  <div className="text-muted-foreground">0 tasks due</div>
                 </div>
                 <div className="text-sm">
                   <div className="font-medium text-foreground">This Week</div>
-                  <div className="text-muted-foreground">5 tasks due</div>
+                  <div className="text-muted-foreground">0 tasks due</div>
                 </div>
               </div>
             </CardContent>

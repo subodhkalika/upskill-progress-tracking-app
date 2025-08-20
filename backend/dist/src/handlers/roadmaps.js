@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteRoadmap = exports.updateRoadmap = exports.getRoadmap = exports.getRoadmaps = exports.createRoadmap = void 0;
 const createRoadmap = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { title, description, isPublic } = request.body;
     try {
         const newRoadmap = await request.server.prisma.roadmap.create({
@@ -22,7 +22,7 @@ const createRoadmap = async (request, reply) => {
 };
 exports.createRoadmap = createRoadmap;
 const getRoadmaps = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     try {
         const roadmaps = await request.server.prisma.roadmap.findMany({
             where: { userId },
@@ -37,7 +37,7 @@ const getRoadmaps = async (request, reply) => {
 };
 exports.getRoadmaps = getRoadmaps;
 const getRoadmap = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const roadmap = await request.server.prisma.roadmap.findFirst({
@@ -55,7 +55,7 @@ const getRoadmap = async (request, reply) => {
 };
 exports.getRoadmap = getRoadmap;
 const updateRoadmap = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     const updateData = request.body;
     try {
@@ -75,7 +75,7 @@ const updateRoadmap = async (request, reply) => {
 };
 exports.updateRoadmap = updateRoadmap;
 const deleteRoadmap = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const roadmap = await request.server.prisma.roadmap.deleteMany({

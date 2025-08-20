@@ -6,6 +6,9 @@ import authRoutes from './routes/auth';
 import resourceRoutes from './routes/resources'; // Import new routes
 import roadmapRoutes from './routes/roadmaps'; // Import roadmap routes
 import taskRoutes from './routes/tasks'; // Import task routes
+import milestoneRoutes from './routes/milestones';
+import progressRoutes from './routes/progress';
+import settingsRoutes from './routes/settings';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
 import cors from '@fastify/cors';
@@ -46,18 +49,16 @@ const loadJwtConfig = () => {
       authorizationTokenInvalidMessage: 'Authorization token is invalid!',
       authorizationTokenUntrustedMessage: 'Authorization token is untrusted!',
     },
-  }
-}
-
-const loadDecorators = async () => {
-  // Hook to verify JWT for protected routes
-  app.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
-    try {
-      await request.jwtVerify();
-    } catch (err) {
-      reply.send(err);
+    decode: { complete: true },
+    verify: {
+      // This is used to verify the token.
+      // We are adding userId to the payload.
+      // So we need to tell jwt.verify to expect it.
+      // Otherwise it will throw an error.
+      allowedIss: ['localhost'],
+      allowedAud: ['localhost'],
     }
-  });
+  }
 }
 
 const loadRoutes = async () => {
@@ -77,6 +78,18 @@ const loadRoutes = async () => {
   await app.register(taskRoutes, { prefix: '/tasks' }); // Register task routes
   app.log.info('Task routes registered.');
 
+  // Register milestone routes
+  await app.register(milestoneRoutes, { prefix: '/milestones' });
+  app.log.info('Milestone routes registered.');
+
+  // Register progress routes
+  await app.register(progressRoutes, { prefix: '/progress' });
+  app.log.info('Progress routes registered.');
+
+  // Register settings routes
+  await app.register(settingsRoutes, { prefix: '/settings' });
+  app.log.info('Settings routes registered.');
+
   // Root route
   app.get('/', async (request: FastifyRequest,  reply: FastifyReply) => {
     reply.send({ message: 'Fastify API is running!' });
@@ -86,8 +99,9 @@ const loadRoutes = async () => {
 async function bootstrap() {
   try {
     await app.register(cors, {
-      origin: 'http://localhost:3001', // Or set to your frontend URL like "http://localhost:3000"
+      origin: 'http://localhost:3001', // Or set to your frontend URL like "http://localhost:3001"
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
     });
     
     // Register DB plugin first
@@ -101,9 +115,6 @@ async function bootstrap() {
     // Register auth plugin
     await app.register(authPlugin);
     app.log.info('Auth plugin registered.');
-
-    await loadDecorators();
-    app.log.info('Auth decorators loaded.');
 
     await loadRoutes();
     app.log.info('Routes loaded.');

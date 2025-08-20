@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
 const taskHandlers = __importStar(require("../handlers/tasks"));
 async function default_1(fastify) {
-    fastify.post('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, taskHandlers.createTask);
-    fastify.get('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, taskHandlers.getTasks);
-    fastify.get('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, taskHandlers.getTask);
-    fastify.put('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, taskHandlers.updateTask);
-    fastify.delete('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, taskHandlers.deleteTask);
+    fastify.post('/', { preHandler: [fastify.authenticate] }, taskHandlers.createTask);
+    fastify.get('/', { preHandler: [fastify.authenticate] }, taskHandlers.getTasks);
+    fastify.get('/:id', { preHandler: [fastify.authenticate] }, taskHandlers.getTask);
+    fastify.put('/:id', { preHandler: [fastify.authenticate] }, taskHandlers.updateTask);
+    fastify.delete('/:id', { preHandler: [fastify.authenticate] }, taskHandlers.deleteTask);
 }

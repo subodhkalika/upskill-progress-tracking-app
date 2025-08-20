@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTask = exports.updateTask = exports.getTask = exports.getTasks = exports.createTask = void 0;
 const createTask = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { title, resourceId } = request.body;
     try {
         const newTask = await request.server.prisma.task.create({
@@ -21,7 +21,7 @@ const createTask = async (request, reply) => {
 };
 exports.createTask = createTask;
 const getTasks = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     try {
         const tasks = await request.server.prisma.task.findMany({
             where: { userId },
@@ -36,7 +36,7 @@ const getTasks = async (request, reply) => {
 };
 exports.getTasks = getTasks;
 const getTask = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const task = await request.server.prisma.task.findFirst({
@@ -54,7 +54,7 @@ const getTask = async (request, reply) => {
 };
 exports.getTask = getTask;
 const updateTask = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     const updateData = request.body;
     try {
@@ -74,7 +74,7 @@ const updateTask = async (request, reply) => {
 };
 exports.updateTask = updateTask;
 const deleteTask = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const task = await request.server.prisma.task.deleteMany({

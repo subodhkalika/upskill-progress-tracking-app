@@ -1,10 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import * as resourceHandlers from '../handlers/resources';
+import { ResourceInput } from '../interfaces/resource';
 
 export default async function (fastify: FastifyInstance) {
-  fastify.post('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.createResource);
-  fastify.get('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.getResources);
-  fastify.get('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.getResource);
-  fastify.put('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.updateResource);
-  fastify.delete('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.deleteResource);
+  fastify.post<{ Body: ResourceInput }>('/', { preHandler: [fastify.authenticate] }, resourceHandlers.createResource);
+  fastify.get('/', { preHandler: [fastify.authenticate] }, resourceHandlers.getResources);
+  fastify.get<{ Params: { id: string } }>('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.getResource);
+  fastify.put<{ Params: { id: string }, Body: Partial<ResourceInput> }>('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.updateResource);
+  fastify.delete<{ Params: { id: string } }>('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.deleteResource);
 }

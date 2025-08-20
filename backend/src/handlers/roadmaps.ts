@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { RoadmapInput } from '../interfaces/roadmap';
 
 export const createRoadmap = async (request: FastifyRequest<{ Body: RoadmapInput }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { title, description, isPublic } = request.body;
   try {
     const newRoadmap = await request.server.prisma.roadmap.create({
@@ -21,7 +21,7 @@ export const createRoadmap = async (request: FastifyRequest<{ Body: RoadmapInput
 };
 
 export const getRoadmaps = async (request: FastifyRequest, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   try {
     const roadmaps = await request.server.prisma.roadmap.findMany({
       where: { userId },
@@ -35,7 +35,7 @@ export const getRoadmaps = async (request: FastifyRequest, reply: FastifyReply) 
 };
 
 export const getRoadmap = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const roadmap = await request.server.prisma.roadmap.findFirst({
@@ -52,7 +52,7 @@ export const getRoadmap = async (request: FastifyRequest<{ Params: { id: string 
 };
 
 export const updateRoadmap = async (request: FastifyRequest<{ Params: { id: string }, Body: Partial<RoadmapInput> }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   const updateData = request.body;
   try {
@@ -71,7 +71,7 @@ export const updateRoadmap = async (request: FastifyRequest<{ Params: { id: stri
 };
 
 export const deleteRoadmap = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const roadmap = await request.server.prisma.roadmap.deleteMany({

@@ -22,7 +22,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "5001:5001" # Map host port 5001 to container port 5001 (where Express will run)
+      - "5001:5001" # Map host port 5001 to container port 5001
     volumes:
       - ./backend:/app # Mount the backend code into the container for live reloading
       - /app/node_modules # Exclude node_modules from host mount to avoid conflicts
@@ -31,6 +31,7 @@ services:
     environment:
       DATABASE_URL: postgres://user:password@db:5432/my_db # Connection string for backend to connect to DB
       NODE_ENV: development
+    command: npm run dev
 
   # Frontend Service (React)
   frontend:

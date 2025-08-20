@@ -14,10 +14,11 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   
-  // New relations
   roadmaps     Roadmap[]
   resources    Resource[]
   tasks        Task[]
+  progress     Progress?
+  settings     Settings?
 }
 
 model Resource {
@@ -30,11 +31,12 @@ model Resource {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   
-  // Relations
   userId      String
   user        User        @relation(fields: [userId], references: [id])
   roadmapId   String?
   roadmap     Roadmap?    @relation(fields: [roadmapId], references: [id])
+  milestoneId String?
+  milestone   Milestone?  @relation(fields: [milestoneId], references: [id])
   
   tasks       Task[]
 }
@@ -47,9 +49,23 @@ model Roadmap {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
-  // Relations
   userId      String
   user        User      @relation(fields: [userId], references: [id])
+  resources   Resource[]
+  milestones  Milestone[]
+}
+
+model Milestone {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  roadmapId   String
+  roadmap     Roadmap     @relation(fields: [roadmapId], references: [id])
+  tasks       Task[]
   resources   Resource[]
 }
 
@@ -60,12 +76,34 @@ model Task {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
-  // Relations
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   resourceId  String?
   resource    Resource? @relation(fields: [resourceId], references: [id])
-  
+  milestoneId String?
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
+}
+
+model Progress {
+  id        String   @id @default(uuid())
+  streaks   Int      @default(0)
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Settings {
+  id                   String   @id @default(uuid())
+  notificationsEnabled Boolean  @default(true)
+  theme                String   @default("light")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id])
 }
 
 enum ResourceType {

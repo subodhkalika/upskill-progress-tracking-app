@@ -22,7 +22,7 @@ import { Checkbox } from './ui/checkbox';
 
 export function Signup() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -30,10 +30,12 @@ export function Signup() {
     password: '',
     confirmPassword: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -52,18 +54,30 @@ export function Signup() {
   const passwordStrength = getPasswordStrength(formData.password);
   const passwordsMatch = formData.password === formData.confirmPassword;
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) return;
     
     setIsLoading(true);
+    setError(null);
+    setSuccess(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await signup({ email: formData.email, password: formData.password });
+      setSuccess('Account created successfully! Please login.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (err: any) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
+    } finally {
       setIsLoading(false);
-      login();
-      navigate('/');
-    }, 1500);
+    }
   };
 
   return (
@@ -276,6 +290,9 @@ export function Signup() {
                     <p className="text-xs text-green-600">Passwords match</p>
                   )}
                 </div>
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {success && <p className="text-green-500 text-sm">{success}</p>}
 
                 <div className="flex items-start space-x-2">
                   <Checkbox

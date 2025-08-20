@@ -25,18 +25,22 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      login();
+    try {
+      await login({ email, password });
       navigate('/');
-    }, 1000);
+    } catch (err) {
+      setError('Invalid email or password.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -142,6 +146,8 @@ export function Login() {
                     </Button>
                   </div>
                 </div>
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">

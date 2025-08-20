@@ -11,8 +11,12 @@ const auth_2 = __importDefault(require("./routes/auth"));
 const resources_1 = __importDefault(require("./routes/resources")); // Import new routes
 const roadmaps_1 = __importDefault(require("./routes/roadmaps")); // Import roadmap routes
 const tasks_1 = __importDefault(require("./routes/tasks")); // Import task routes
+const milestones_1 = __importDefault(require("./routes/milestones"));
+const progress_1 = __importDefault(require("./routes/progress"));
+const settings_1 = __importDefault(require("./routes/settings"));
 const cookie_1 = __importDefault(require("@fastify/cookie"));
 const jwt_1 = __importDefault(require("@fastify/jwt"));
+const cors_1 = __importDefault(require("@fastify/cors"));
 const app = (0, fastify_1.default)({
     logger: {
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -42,18 +46,16 @@ const loadJwtConfig = () => {
             authorizationTokenInvalidMessage: 'Authorization token is invalid!',
             authorizationTokenUntrustedMessage: 'Authorization token is untrusted!',
         },
+        decode: { complete: true },
+        verify: {
+            // This is used to verify the token.
+            // We are adding userId to the payload.
+            // So we need to tell jwt.verify to expect it.
+            // Otherwise it will throw an error.
+            allowedIss: ['localhost'],
+            allowedAud: ['localhost'],
+        }
     };
-};
-const loadDecorators = async () => {
-    // Hook to verify JWT for protected routes
-    app.decorate('authenticate', async function (request, reply) {
-        try {
-            await request.jwtVerify();
-        }
-        catch (err) {
-            reply.send(err);
-        }
-    });
 };
 const loadRoutes = async () => {
     // Register auth routes
@@ -68,6 +70,15 @@ const loadRoutes = async () => {
     // Register task routes
     await app.register(tasks_1.default, { prefix: '/tasks' }); // Register task routes
     app.log.info('Task routes registered.');
+    // Register milestone routes
+    await app.register(milestones_1.default, { prefix: '/milestones' });
+    app.log.info('Milestone routes registered.');
+    // Register progress routes
+    await app.register(progress_1.default, { prefix: '/progress' });
+    app.log.info('Progress routes registered.');
+    // Register settings routes
+    await app.register(settings_1.default, { prefix: '/settings' });
+    app.log.info('Settings routes registered.');
     // Root route
     app.get('/', async (request, reply) => {
         reply.send({ message: 'Fastify API is running!' });
@@ -75,6 +86,11 @@ const loadRoutes = async () => {
 };
 async function bootstrap() {
     try {
+        await app.register(cors_1.default, {
+            origin: 'http://localhost:3001', // Or set to your frontend URL like "http://localhost:3001"
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            credentials: true,
+        });
         // Register DB plugin first
         await app.register(db_1.default);
         app.log.info('Prisma DB plugin registered.');
@@ -84,8 +100,6 @@ async function bootstrap() {
         // Register auth plugin
         await app.register(auth_1.default);
         app.log.info('Auth plugin registered.');
-        await loadDecorators();
-        app.log.info('Auth decorators loaded.');
         await loadRoutes();
         app.log.info('Routes loaded.');
         // Start server

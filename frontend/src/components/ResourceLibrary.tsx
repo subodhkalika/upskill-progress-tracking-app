@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { 
   Plus, 
   Search, 
@@ -16,106 +17,110 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { useState } from 'react';
+import { fetchResources, createResource, updateResource, deleteResource } from '../services/api';
+import { Skeleton } from './ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import { Label } from './ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 export function ResourceLibrary() {
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const resources = [
-    {
-      id: 1,
-      title: 'Node.js Complete Course - Build REST APIs',
-      description: 'Comprehensive tutorial covering Node.js fundamentals and REST API development',
-      type: 'video',
-      url: 'https://youtube.com/course1',
-      tags: ['Node.js', 'REST API', 'Backend'],
-      roadmap: 'Backend Development',
-      duration: '8h 30min',
-      rating: 4.8,
-      addedDate: '2 days ago',
-      completed: false
-    },
-    {
-      id: 2,
-      title: 'System Design Interview Guide',
-      description: 'Complete guide to acing system design interviews at top tech companies',
-      type: 'book',
-      url: 'https://amazon.com/system-design-book',
-      tags: ['System Design', 'Interview', 'Architecture'],
-      roadmap: 'System Design',
-      duration: '320 pages',
-      rating: 4.9,
-      addedDate: '1 week ago',
-      completed: true
-    },
-    {
-      id: 3,
-      title: 'AWS Documentation - EC2 User Guide',
-      description: 'Official AWS documentation for Amazon Elastic Compute Cloud',
-      type: 'article',
-      url: 'https://docs.aws.amazon.com/ec2',
-      tags: ['AWS', 'EC2', 'Cloud'],
-      roadmap: 'Cloud Architecture',
-      duration: 'Reference',
-      rating: 4.5,
-      addedDate: '3 days ago',
-      completed: false
-    },
-    {
-      id: 4,
-      title: 'Docker Deep Dive Course',
-      description: 'Master containerization with Docker from basics to advanced concepts',
-      type: 'video',
-      url: 'https://udemy.com/docker-course',
-      tags: ['Docker', 'DevOps', 'Containers'],
-      roadmap: 'DevOps Pipeline',
-      duration: '12h 15min',
-      rating: 4.7,
-      addedDate: '5 days ago',
-      completed: false
-    },
-    {
-      id: 5,
-      title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-      description: 'Essential principles for writing maintainable and clean code',
-      type: 'book',
-      url: 'https://amazon.com/clean-code-book',
-      tags: ['Clean Code', 'Best Practices', 'Programming'],
-      roadmap: 'General Development',
-      duration: '464 pages',
-      rating: 4.9,
-      addedDate: '2 weeks ago',
-      completed: true
-    },
-    {
-      id: 6,
-      title: 'React Performance Optimization Techniques',
-      description: 'Blog series covering advanced React performance optimization strategies',
-      type: 'article',
-      url: 'https://blog.example.com/react-performance',
-      tags: ['React', 'Performance', 'Frontend'],
-      roadmap: 'Frontend Development',
-      duration: '15 min read',
-      rating: 4.6,
-      addedDate: '1 day ago',
-      completed: false
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [newResource, setNewResource] = useState({ title: '', url: '', type: 'ARTICLE' });
+
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchResources();
+        setResources(data);
+      } catch (err) {
+        setError('Failed to load resources.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadResources();
+  }, []);
+
+  const handleCreateResource = async () => {
+    try {
+      const createdResource = await createResource(newResource);
+      setResources([...resources, createdResource]);
+      setOpenCreateDialog(false);
+      setNewResource({ title: '', url: '', type: 'ARTICLE' });
+    } catch (err) {
+      setError('Failed to create resource.');
     }
-  ];
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    try {
+      await deleteResource(id);
+      setResources(resources.filter((r) => r.id !== id));
+    } catch (err) {
+      setError('Failed to delete resource.');
+    }
+  };
+
+  const handleToggleComplete = async (resource: any) => {
+    try {
+      const updatedResource = await updateResource(resource.id, { completed: !resource.completed });
+      setResources(resources.map((r) => (r.id === resource.id ? updatedResource : r)));
+    } catch (err) {
+      setError('Failed to update resource.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 space-y-6">
+        <Skeleton className="h-8 w-1/2 mb-6" />
+        <div className="space-y-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-500">{error}</div>;
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'video': return <Video className="w-5 h-5 text-red-500" />;
-      case 'book': return <BookOpen className="w-5 h-5 text-blue-500" />;
-      case 'article': return <FileText className="w-5 h-5 text-green-500" />;
+      case 'VIDEO': return <Video className="w-5 h-5 text-red-500" />;
+      case 'BOOK': return <BookOpen className="w-5 h-5 text-blue-500" />;
+      case 'ARTICLE': return <FileText className="w-5 h-5 text-green-500" />;
       default: return <Globe className="w-5 h-5 text-gray-500" />;
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'video': return 'bg-red-50 text-red-700 border-red-200';
-      case 'book': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'article': return 'bg-green-50 text-green-700 border-green-200';
+      case 'VIDEO': return 'bg-red-50 text-red-700 border-red-200';
+      case 'BOOK': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'ARTICLE': return 'bg-green-50 text-green-700 border-green-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
@@ -138,59 +143,34 @@ export function ResourceLibrary() {
               <h3 className="font-medium text-foreground line-clamp-2 mr-4">
                 {resource.title}
               </h3>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0" onClick={() => handleDeleteResource(resource.id)}>
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </div>
-            
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{resource.description}</p>
             
             <div className="flex items-center justify-between mb-4">
               <Badge className={`text-xs border ${getTypeColor(resource.type)}`} variant="outline">
                 {resource.type}
               </Badge>
-              <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                <span>{resource.rating}</span>
-              </div>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between text-sm text-muted-foreground mb-4 gap-2 lg:gap-0">
-              <span>{resource.duration}</span>
-              <span>Added {resource.addedDate}</span>
             </div>
             
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-              <div className="flex flex-wrap gap-1">
-                {resource.tags.slice(0, 2).map((tag: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-                {resource.tags.length > 2 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{resource.tags.length - 2}
-                  </Badge>
-                )}
-              </div>
-              
               <div className="flex items-center space-x-2">
                 {resource.completed && (
                   <Badge className="text-xs bg-green-100 text-green-800" variant="secondary">
                     Completed
                   </Badge>
                 )}
-                <Button size="sm" variant="outline" className="h-8">
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Open
+                <Button size="sm" variant="outline" className="h-8" onClick={() => handleToggleComplete(resource)}>
+                  Mark as {resource.completed ? 'Incomplete' : 'Complete'}
+                </Button>
+                <Button size="sm" variant="outline" className="h-8" asChild>
+                  <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Open
+                  </a>
                 </Button>
               </div>
-            </div>
-            
-            <div>
-              <Badge variant="outline" className="text-xs">
-                {resource.roadmap}
-              </Badge>
             </div>
           </div>
         </div>
@@ -206,10 +186,66 @@ export function ResourceLibrary() {
           <h1 className="text-2xl lg:text-3xl font-semibold text-foreground mb-2">Resource Library</h1>
           <p className="text-muted-foreground">Centralized collection of your learning resources</p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Resource
-        </Button>
+        <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Resource
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add a new resource</DialogTitle>
+              <DialogDescription>
+                Add a new resource to your library.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  value={newResource.title}
+                  onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="url" className="text-right">
+                  URL
+                </Label>
+                <Input
+                  id="url"
+                  value={newResource.url}
+                  onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">
+                  Type
+                </Label>
+                <Select onValueChange={(value) => setNewResource({ ...newResource, type: value })} defaultValue={newResource.type}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="BOOK">Book</SelectItem>
+                    <SelectItem value="ARTICLE">Article</SelectItem>
+                    <SelectItem value="COURSE">Course</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleCreateResource}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {/* Toolbar */}
@@ -235,25 +271,25 @@ export function ResourceLibrary() {
       <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">24</div>
+            <div className="text-2xl font-bold text-foreground">{resources.length}</div>
             <div className="text-sm text-muted-foreground">Total Resources</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">8</div>
+            <div className="text-2xl font-bold text-red-600">{filterResources('VIDEO').length}</div>
             <div className="text-sm text-muted-foreground">Videos</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">5</div>
+            <div className="text-2xl font-bold text-blue-600">{filterResources('BOOK').length}</div>
             <div className="text-sm text-muted-foreground">Books</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">11</div>
+            <div className="text-2xl font-bold text-green-600">{filterResources('ARTICLE').length}</div>
             <div className="text-sm text-muted-foreground">Articles</div>
           </CardContent>
         </Card>
@@ -266,51 +302,46 @@ export function ResourceLibrary() {
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="mb-6 w-full lg:w-auto">
               <TabsTrigger value="all">All Resources</TabsTrigger>
-              <TabsTrigger value="video">Videos</TabsTrigger>
-              <TabsTrigger value="book">Books</TabsTrigger>
-              <TabsTrigger value="article">Articles</TabsTrigger>
+              <TabsTrigger value="VIDEO">Videos</TabsTrigger>
+              <TabsTrigger value="BOOK">Books</TabsTrigger>
+              <TabsTrigger value="ARTICLE">Articles</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="mt-0">
               <div className="space-y-4">
                 {resources
                   .filter(resource => 
-                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+                    resource.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(resource => <ResourceCard key={resource.id} resource={resource} />)}
               </div>
             </TabsContent>
             
-            <TabsContent value="video" className="mt-0">
+            <TabsContent value="VIDEO" className="mt-0">
               <div className="space-y-4">
-                {filterResources('video')
+                {filterResources('VIDEO')
                   .filter(resource => 
-                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    resource.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(resource => <ResourceCard key={resource.id} resource={resource} />)}
               </div>
             </TabsContent>
             
-            <TabsContent value="book" className="mt-0">
+            <TabsContent value="BOOK" className="mt-0">
               <div className="space-y-4">
-                {filterResources('book')
+                {filterResources('BOOK')
                   .filter(resource => 
-                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    resource.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(resource => <ResourceCard key={resource.id} resource={resource} />)}
               </div>
             </TabsContent>
             
-            <TabsContent value="article" className="mt-0">
+            <TabsContent value="ARTICLE" className="mt-0">
               <div className="space-y-4">
-                {filterResources('article')
+                {filterResources('ARTICLE')
                   .filter(resource => 
-                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    resource.title.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map(resource => <ResourceCard key={resource.id} resource={resource} />)}
               </div>

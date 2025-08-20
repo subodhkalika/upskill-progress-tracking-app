@@ -14,9 +14,29 @@ export const registerUser = async (request: FastifyRequest<{ Body: RegisterBody 
     }
 
     const passwordHash = await hashPassword(password);
-    const newUser = await request.server.prisma.user.create({
-      data: { email, passwordHash },
-      select: { id: true, email: true, createdAt: true }
+    
+    const newUser = await request.server.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+        },
+        select: { id: true, email: true, createdAt: true }
+      });
+
+      await prisma.progress.create({
+        data: {
+          userId: user.id,
+        }
+      });
+
+      await prisma.settings.create({
+        data: {
+          userId: user.id,
+        }
+      });
+
+      return user;
     });
 
     return reply.status(201).send({ message: 'User registered successfully.', user: newUser });
@@ -32,7 +52,13 @@ export const registerUser = async (request: FastifyRequest<{ Body: RegisterBody 
 export const loginUser = async (request: FastifyRequest<{ Body: LoginBody }>, reply: FastifyReply) => {
   const { email, password } = request.body;
   try {
-    const user = await request.server.prisma.user.findUnique({ where: { email } });
+    const user = await request.server.prisma.user.findUnique({ 
+      where: { email },
+      include: {
+        progress: true,
+        settings: true,
+      }
+    });
     if (!user) {
       return reply.status(401).send({ message: 'Invalid email or password.' });
     }
@@ -42,8 +68,8 @@ export const loginUser = async (request: FastifyRequest<{ Body: LoginBody }>, re
       return reply.status(401).send({ message: 'Invalid email or password.' });
     }
 
-    const accessToken = request.server.jwt.sign({ email: user.email }, { expiresIn: '15m' });
-    const refreshToken = request.server.jwt.sign({ email: user.email }, { expiresIn: '7d' });
+    const accessToken = request.server.jwt.sign({ userId: user.id, email: user.email }, { expiresIn: '15m' });
+    const refreshToken = request.server.jwt.sign({ userId: user.id, email: user.email }, { expiresIn: '7d' });
 
     // Set refresh token as an HTTP-only cookie
     reply.setCookie('refreshToken', refreshToken, {
@@ -54,7 +80,9 @@ export const loginUser = async (request: FastifyRequest<{ Body: LoginBody }>, re
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
     });
 
-    return reply.status(200).send({ message: 'Login successful.', accessToken });
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    return reply.status(200).send({ message: 'Login successful.', accessToken, user: userWithoutPassword });
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });
@@ -71,8 +99,8 @@ export const refreshAccessToken = async (request: FastifyRequest, reply: Fastify
       return reply.status(401).send({ message: 'Refresh token not found.' });
     }
 
-    const decodedToken = request.server.jwt.verify(refreshToken) as { email: string };
-    const accessToken = request.server.jwt.sign({ email: decodedToken.email }, { expiresIn: '15m' });
+    const decodedToken = request.server.jwt.verify(refreshToken) as { userId: string, email: string };
+    const accessToken = request.server.jwt.sign({ userId: decodedToken.userId, email: decodedToken.email }, { expiresIn: '15m' });
     return reply.status(200).send({ accessToken });
   } catch (err) {
     request.log.error(err);

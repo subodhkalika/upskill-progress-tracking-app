@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { ResourceInput } from '../interfaces/resource';
 
 export const createResource = async (request: FastifyRequest<{ Body: ResourceInput }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { title, url, type, notes, roadmapId } = request.body;
   try {
     const newResource = await request.server.prisma.resource.create({
@@ -23,7 +23,7 @@ export const createResource = async (request: FastifyRequest<{ Body: ResourceInp
 };
 
 export const getResources = async (request: FastifyRequest, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   try {
     const resources = await request.server.prisma.resource.findMany({
       where: { userId },
@@ -37,7 +37,7 @@ export const getResources = async (request: FastifyRequest, reply: FastifyReply)
 };
 
 export const getResource = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const resource = await request.server.prisma.resource.findFirst({
@@ -54,7 +54,7 @@ export const getResource = async (request: FastifyRequest<{ Params: { id: string
 };
 
 export const updateResource = async (request: FastifyRequest<{ Params: { id: string }, Body: Partial<ResourceInput> }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   const updateData = request.body;
   try {
@@ -73,7 +73,7 @@ export const updateResource = async (request: FastifyRequest<{ Params: { id: str
 };
 
 export const deleteResource = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-  const userId = request.user.id;
+  const userId = request.user.userId;
   const { id } = request.params;
   try {
     const resource = await request.server.prisma.resource.deleteMany({

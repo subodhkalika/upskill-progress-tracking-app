@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteResource = exports.updateResource = exports.getResource = exports.getResources = exports.createResource = void 0;
 const createResource = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { title, url, type, notes, roadmapId } = request.body;
     try {
         const newResource = await request.server.prisma.resource.create({
@@ -24,7 +24,7 @@ const createResource = async (request, reply) => {
 };
 exports.createResource = createResource;
 const getResources = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     try {
         const resources = await request.server.prisma.resource.findMany({
             where: { userId },
@@ -39,7 +39,7 @@ const getResources = async (request, reply) => {
 };
 exports.getResources = getResources;
 const getResource = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const resource = await request.server.prisma.resource.findFirst({
@@ -57,7 +57,7 @@ const getResource = async (request, reply) => {
 };
 exports.getResource = getResource;
 const updateResource = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     const updateData = request.body;
     try {
@@ -77,7 +77,7 @@ const updateResource = async (request, reply) => {
 };
 exports.updateResource = updateResource;
 const deleteResource = async (request, reply) => {
-    const userId = request.user.id;
+    const userId = request.user.userId;
     const { id } = request.params;
     try {
         const resource = await request.server.prisma.resource.deleteMany({

@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
 const resourceHandlers = __importStar(require("../handlers/resources"));
 async function default_1(fastify) {
-    fastify.post('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.createResource);
-    fastify.get('/', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.getResources);
-    fastify.get('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.getResource);
-    fastify.put('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.updateResource);
-    fastify.delete('/:id', { preHandler: fastify.auth([fastify.jwtAuth]) }, resourceHandlers.deleteResource);
+    fastify.post('/', { preHandler: [fastify.authenticate] }, resourceHandlers.createResource);
+    fastify.get('/', { preHandler: [fastify.authenticate] }, resourceHandlers.getResources);
+    fastify.get('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.getResource);
+    fastify.put('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.updateResource);
+    fastify.delete('/:id', { preHandler: [fastify.authenticate] }, resourceHandlers.deleteResource);
 }
