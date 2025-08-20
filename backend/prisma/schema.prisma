@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // New relations
+  roadmaps     Roadmap[]
+  resources    Resource[]
+  tasks        Task[]
+}
+
+model Resource {
+  id          String      @id @default(uuid())
+  title       String
+  url         String
+  type        ResourceType
+  completed   Boolean     @default(false)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  roadmapId   String?
+  roadmap     Roadmap?    @relation(fields: [roadmapId], references: [id])
+  
+  tasks       Task[]
+}
+
+model Roadmap {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  resources   Resource[]
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  resourceId  String?
+  resource    Resource? @relation(fields: [resourceId], references: [id])
+  
+}
+
+enum ResourceType {
+  VIDEO
+  BOOK
+  ARTICLE
+  COURSE
+  OTHER
+}

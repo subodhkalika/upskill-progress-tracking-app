@@ -1,0 +1,53 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16-alpine # Using a lightweight Alpine-based PostgreSQL image
+    restart: always
+    environment:
+      POSTGRES_DB: my_db # Our database name
+      POSTGRES_USER: user # Database user
+      POSTGRES_PASSWORD: password # Database password (change this for production!)
+    ports:
+      - "5432:5432" # Map host port 5432 to container port 5432
+    volumes:
+      - db_data:/var/lib/postgresql/data # Persist database data
+
+  # Backend Service (Node.js/Express)
+  backend:
+    build:
+      context: ./backend # Dockerfile will be in the 'backend' directory
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "5001:5001" # Map host port 5001 to container port 5001 (where Express will run)
+    volumes:
+      - ./backend:/app # Mount the backend code into the container for live reloading
+      - /app/node_modules # Exclude node_modules from host mount to avoid conflicts
+    depends_on:
+      - db # Backend depends on the database being ready
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/my_db # Connection string for backend to connect to DB
+      NODE_ENV: development
+
+  # Frontend Service (React)
+  frontend:
+    build:
+      context: ./frontend # Dockerfile will be in the 'frontend' directory
+      dockerfile: Dockerfile
+      target: build
+    restart: always
+    ports:
+      - "3001:3001" # Map host port 3001 to container port 3001 (where React dev server will run)
+    volumes:
+      - ./frontend:/app # Mount the frontend code into the container for live reloading
+      - /app/node_modules # Exclude node_modules from host mount
+    environment:
+      # This should point to your backend service. If running locally via Docker Compose,
+      # it's the service name (backend) and the port exposed *within* the Docker network.
+      REACT_APP_API_BASE_URL: http://backend:5001 # React will call the backend on this URL
+    command: npm run dev
+volumes:
+  db_data: # Define the named volume for database persistence
