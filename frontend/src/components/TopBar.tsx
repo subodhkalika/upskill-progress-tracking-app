@@ -25,9 +25,10 @@ import { cn } from './ui/utils';
 
 interface TopBarProps {
   isCollapsed: boolean;
+  onLogout?: () => void;
 }
 
-export function TopBar({ isCollapsed }: TopBarProps) {
+export function TopBar({ isCollapsed, onLogout }: TopBarProps) {
   const weeklyProgress = 67; // 67% of weekly goal
   const currentStreak = 15;
 
@@ -111,7 +112,7 @@ export function TopBar({ isCollapsed }: TopBarProps) {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem className="text-red-600" onClick={onLogout}>
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

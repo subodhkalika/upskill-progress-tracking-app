@@ -16,7 +16,11 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { useState } from 'react';
 
-export function Profile() {
+interface ProfileProps {
+  onLogout?: () => void;
+}
+
+export function Profile({ onLogout }: ProfileProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [weeklyGoal, setWeeklyGoal] = useState('15');
@@ -303,7 +307,11 @@ export function Profile() {
                 Help & Support
                 <ChevronRight className="w-4 h-4 ml-auto" />
               </Button>
-              <Button variant="outline" className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                onClick={onLogout}
+              >
                 Sign Out
                 <ChevronRight className="w-4 h-4 ml-auto" />
               </Button>

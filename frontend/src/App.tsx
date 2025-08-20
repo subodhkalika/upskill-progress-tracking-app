@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { BottomNavigation } from './components/BottomNavigation';
+
 import { Dashboard } from './components/Dashboard';
 import { Roadmaps } from './components/Roadmaps';
 import { TaskManager } from './components/TaskManager';
@@ -9,11 +10,49 @@ import { ResourceLibrary } from './components/ResourceLibrary';
 import { Analytics } from './components/Analytics';
 import { Profile } from './components/Profile';
 import { cn } from './components/ui/utils';
+import { Login } from './components/Login';
+import { Signup } from './components/Signup';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleSignup = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setActiveTab('home');
+    setSidebarCollapsed(false);
+  };
+
+  // Show authentication screens when not logged in
+  if (!isAuthenticated) {
+    if (authView === 'login') {
+      return (
+        <Login
+          onLogin={handleLogin}
+          onSwitchToSignup={() => setAuthView('signup')}
+        />
+      );
+    } else {
+      return (
+        <Signup 
+          onSignup={handleSignup}
+          onSwitchToLogin={() => setAuthView('login')}
+        />
+      );
+    }
+  }
+
+  // Main application when authenticated
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'home':
@@ -27,7 +66,7 @@ export default function App() {
       case 'analytics':
         return <Analytics />;
       case 'profile':
-        return <Profile />;
+        return <Profile onLogout={handleLogout} />;
       default:
         return <Dashboard />;
     }
@@ -47,7 +86,7 @@ export default function App() {
 
       {/* Desktop Top Bar - Hidden on mobile/tablet */}
       <div className="hidden lg:block">
-        <TopBar isCollapsed={sidebarCollapsed} />
+        <TopBar isCollapsed={sidebarCollapsed} onLogout={handleLogout} />
       </div>
 
       {/* Main Content */}
