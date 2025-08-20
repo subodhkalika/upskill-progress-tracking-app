@@ -1,54 +1,80 @@
-import { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AuthForm } from './components/AuthForm';
+import { useState } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { TopBar } from './components/TopBar';
+import { BottomNavigation } from './components/BottomNavigation';
 import { Dashboard } from './components/Dashboard';
+import { Roadmaps } from './components/Roadmaps';
+import { TaskManager } from './components/TaskManager';
+import { ResourceLibrary } from './components/ResourceLibrary';
+import { Analytics } from './components/Analytics';
+import { Profile } from './components/Profile';
+import { cn } from './components/ui/utils';
 
-// Main App Component (Root of the application)
-function AppContent() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'dashboard'>(() => {
-    // Determine initial page based on whether a token exists
-    return localStorage.getItem('accessToken') ? 'dashboard' : 'login';
-  });
+export default function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Use hash-based routing for simple navigation between auth forms
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#register') {
-        setCurrentPage('register');
-      } else if (hash === '#login') {
-        setCurrentPage('login');
-      } else {
-        // If logged in, always go to dashboard, otherwise default to login
-        setCurrentPage(localStorage.getItem('accessToken') ? 'dashboard' : 'login');
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Call on initial load
-
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  const { accessToken } = useAuth(); // Access accessToken from context
+  const renderActiveScreen = () => {
+    switch (activeTab) {
+      case 'home':
+        return <Dashboard />;
+      case 'roadmaps':
+        return <Roadmaps />;
+      case 'tasks':
+        return <TaskManager />;
+      case 'library':
+        return <ResourceLibrary />;
+      case 'analytics':
+        return <Analytics />;
+      case 'profile':
+        return <Profile />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
   return (
-    <>
-      {accessToken ? (
-        <Dashboard />
-      ) : (
-        currentPage === 'login' ? <AuthForm type="login" /> : <AuthForm type="register" />
-      )}
-    </>
+    <div className="min-h-screen bg-background">
+      {/* Desktop Sidebar - Hidden on mobile/tablet */}
+      <div className="hidden lg:block">
+        <Sidebar 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      </div>
+
+      {/* Desktop Top Bar - Hidden on mobile/tablet */}
+      <div className="hidden lg:block">
+        <TopBar isCollapsed={sidebarCollapsed} />
+      </div>
+
+      {/* Main Content */}
+      <main className={cn(
+        "min-h-screen transition-all duration-300",
+        // Mobile/Tablet: full width, bottom padding for navigation
+        "pb-20 lg:pb-0",
+        // Desktop: account for sidebar and top bar
+        "lg:pt-16",
+        sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
+      )}>
+        <div className={cn(
+          "mx-auto",
+          // Mobile/Tablet: no max width constraint
+          "lg:max-w-7xl"
+        )}>
+          {renderActiveScreen()}
+        </div>
+      </main>
+
+      {/* Mobile/Tablet Bottom Navigation - Hidden on desktop */}
+      <div className="lg:hidden">
+        <BottomNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+        />
+      </div>
+    </div>
   );
 }
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-}
-
-export default App;
