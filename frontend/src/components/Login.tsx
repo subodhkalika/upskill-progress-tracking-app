@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Eye, 
   EyeOff, 
@@ -9,6 +10,7 @@ import {
   Github,
   Chrome
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -16,12 +18,9 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
 
-interface LoginProps {
-  onLogin: () => void;
-  onSwitchToSignup: () => void;
-}
-
-export function Login({ onLogin, onSwitchToSignup }: LoginProps) {
+export function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +34,8 @@ export function Login({ onLogin, onSwitchToSignup }: LoginProps) {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      onLogin();
+      login();
+      navigate('/');
     }, 1000);
   };
 
@@ -201,13 +201,12 @@ export function Login({ onLogin, onSwitchToSignup }: LoginProps) {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
                   Don't have an account?{' '}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto font-medium text-indigo-600 hover:text-indigo-500"
-                    onClick={onSwitchToSignup}
+                  <Link 
+                    to="/signup"
+                    className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
                     Sign up now
-                  </Button>
+                  </Link>
                 </p>
               </div>
             </CardContent>

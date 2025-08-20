@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { AuthContextType, User } from '../types';
-import { apiClient } from '../utils/api';
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  login: () => void;
+  logout: () => void;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Custom hook to use AuthContext
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -13,47 +16,29 @@ export const useAuth = () => {
   return context;
 };
 
-// AuthProvider Component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('accessToken'));
-  const [user, setUser] = useState<User | null>(
-    localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const login = (token: string, userData: User) => {
-    setAccessToken(token);
-    setUser(userData);
-    localStorage.setItem('accessToken', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  const logout = async () => {
-    // Call backend logout endpoint to clear refresh token cookie
-    try {
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout API call failed (might be ok if token expired):', error);
-    }
-
-    setAccessToken(null);
-    setUser(null);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-  };
-
-  // Effect to handle initial token check
+  // Check localStorage for existing auth state on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('accessToken');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setAccessToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    const authState = localStorage.getItem('isAuthenticated');
+    if (authState === 'true') {
+      setIsAuthenticated(true);
     }
   }, []);
 
+  const login = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+  };
+
   return (
-    <AuthContext.Provider value={{ accessToken, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

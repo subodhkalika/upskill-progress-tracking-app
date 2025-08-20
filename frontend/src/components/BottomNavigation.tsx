@@ -6,20 +6,16 @@ import {
   BarChart3, 
   User 
 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 
-interface BottomNavigationProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-}
-
-export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
+export function BottomNavigation() {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Home' },
-    { id: 'roadmaps', icon: Map, label: 'Roadmaps' },
-    { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
-    { id: 'library', icon: Library, label: 'Library' },
-    { id: 'analytics', icon: BarChart3, label: 'Stats' },
-    { id: 'profile', icon: User, label: 'Profile' },
+    { id: 'home', icon: Home, label: 'Home', path: '/' },
+    { id: 'roadmaps', icon: Map, label: 'Roadmaps', path: '/roadmaps' },
+    { id: 'tasks', icon: CheckSquare, label: 'Tasks', path: '/tasks' },
+    { id: 'library', icon: Library, label: 'Library', path: '/library' },
+    { id: 'analytics', icon: BarChart3, label: 'Stats', path: '/analytics' },
+    { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
@@ -27,21 +23,22 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
       <div className="flex justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
           
           return (
-            <button
+            <NavLink
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center justify-center p-3 rounded-lg min-w-[60px] min-h-[60px] transition-colors touch-manipulation ${
-                isActive 
-                  ? 'text-primary bg-primary/10' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
+              to={tab.path}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center p-3 rounded-lg min-w-[60px] min-h-[60px] transition-colors touch-manipulation ${
+                  isActive 
+                    ? 'text-primary bg-primary/10' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`
+              }
             >
               <Icon className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium">{tab.label}</span>
-            </button>
+            </NavLink>
           );
         })}
       </div>

@@ -8,24 +8,23 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { Button } from './ui/button';
 import { cn } from './ui/utils';
 
 interface SidebarProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
 
-export function Sidebar({ activeTab, onTabChange, isCollapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
   const navigationItems = [
-    { id: 'home', icon: Home, label: 'Dashboard' },
-    { id: 'roadmaps', icon: Map, label: 'Roadmaps' },
-    { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
-    { id: 'library', icon: Library, label: 'Library' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'profile', icon: User, label: 'Profile' },
+    { id: 'home', icon: Home, label: 'Dashboard', path: '/' },
+    { id: 'roadmaps', icon: Map, label: 'Roadmaps', path: '/roadmaps' },
+    { id: 'tasks', icon: CheckSquare, label: 'Tasks', path: '/tasks' },
+    { id: 'library', icon: Library, label: 'Library', path: '/library' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
@@ -64,22 +63,20 @@ export function Sidebar({ activeTab, onTabChange, isCollapsed, onToggleCollapse 
         <div className="space-y-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
             
             return (
-              <Button
+              <NavLink
                 key={item.id}
-                variant="ghost"
-                onClick={() => onTabChange(item.id)}
-                className={cn(
-                  "w-full justify-start h-10 hover:bg-sidebar-accent transition-colors",
+                to={item.path}
+                className={({ isActive }) => cn(
+                  "flex items-center w-full h-10 px-3 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-sm font-medium",
                   isActive && "bg-sidebar-accent text-sidebar-primary font-medium",
                   isCollapsed && "justify-center px-0"
                 )}
               >
                 <Icon className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
                 {!isCollapsed && <span>{item.label}</span>}
-              </Button>
+              </NavLink>
             );
           })}
         </div>

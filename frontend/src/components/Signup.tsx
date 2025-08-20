@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Eye, 
   EyeOff, 
@@ -18,12 +20,9 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
 
-interface SignupProps {
-  onSignup: () => void;
-  onSwitchToLogin: () => void;
-}
-
-export function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
+export function Signup() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -62,7 +61,8 @@ export function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      onSignup();
+      login();
+      navigate('/');
     }, 1500);
   };
 
@@ -338,13 +338,12 @@ export function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{' '}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto font-medium text-green-600 hover:text-green-500"
-                    onClick={onSwitchToLogin}
+                  <Link 
+                    to="/login"
+                    className="font-medium text-green-600 hover:text-green-500"
                   >
                     Sign in now
-                  </Button>
+                  </Link>
                 </p>
               </div>
             </CardContent>

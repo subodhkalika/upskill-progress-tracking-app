@@ -15,12 +15,10 @@ import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface ProfileProps {
-  onLogout?: () => void;
-}
-
-export function Profile({ onLogout }: ProfileProps) {
+export function Profile() {
+  const { logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [weeklyGoal, setWeeklyGoal] = useState('15');
@@ -310,7 +308,7 @@ export function Profile({ onLogout }: ProfileProps) {
               <Button 
                 variant="outline" 
                 className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
-                onClick={onLogout}
+                onClick={logout}
               >
                 Sign Out
                 <ChevronRight className="w-4 h-4 ml-auto" />
