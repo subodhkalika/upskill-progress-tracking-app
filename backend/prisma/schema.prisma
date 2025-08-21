@@ -30,9 +30,16 @@ enum ResourceStatus {
   COMPLETED
 }
 
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
+  passwordHash   String          @db.VarChar(255)
   name           String
   profilePicture String?
   subscription   SubscriptionPlan @default(FREE)
@@ -72,6 +79,8 @@ model Roadmap {
 
   milestones     Milestone[]
   skills         Skill[]      @relation("RoadmapSkills")
+  tags           Tag[]        @relation("RoadmapTags")
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -91,6 +100,7 @@ model Milestone {
   updatedAt      DateTime     @updatedAt
 }
 
+
 model Task {
   id             String       @id @default(uuid())
   user           User         @relation(fields: [userId], references: [id])
@@ -101,7 +111,8 @@ model Task {
 
   name           String
   description    String?
-  faculty        String?
+  topic          String?
+  status         TaskStatus   @default(PENDING)
   priority       TaskPriority
   dueDate        DateTime?
   estimatedTime  Float        @default(0)
@@ -110,10 +121,12 @@ model Task {
   resources      Resource[]   @relation("TaskResources")
   skills         Skill[]      @relation("TaskSkills")
   timeLogs       TimeLog[]
+  tags           Tag[]        @relation("TaskTags")
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
+
 
 model TimeLog {
   id        String   @id @default(uuid())
@@ -124,6 +137,7 @@ model TimeLog {
   note      String?
   loggedAt  DateTime @default(now())
 }
+
 
 model Resource {
   id          String           @id @default(uuid())
@@ -140,6 +154,7 @@ model Resource {
   skills      Skill[]          @relation("ResourceSkills")
   categories  Skill[]          @relation("ResourceCategories")
   tasks       Task[]           @relation("TaskResources")
+  tags        Tag[]            @relation("ResourceTags")  // 🔥 many-to-many with Tag
 
   addedOn     DateTime         @default(now())
 }
@@ -163,4 +178,13 @@ model Achievement {
   description String
   icon        String?
   earnedOn    DateTime @default(now())
+}
+
+model Tag {
+  id        String      @id @default(uuid())
+  name      String      @unique
+
+  tasks     Task[]      @relation("TaskTags")
+  resources Resource[]  @relation("ResourceTags")
+  roadmaps  Roadmap[]   @relation("RoadmapTags")
 }

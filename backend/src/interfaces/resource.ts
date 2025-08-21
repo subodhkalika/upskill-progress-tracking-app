@@ -7,6 +7,7 @@ export interface CreateResourceInput {
   status?: ResourceStatus;
   duration?: number;
   rating?: number;
+  tags?: string[];
 }
 
 export interface UpdateResourceInput {
@@ -16,4 +17,5 @@ export interface UpdateResourceInput {
   status?: ResourceStatus;
   duration?: number;
   rating?: number;
+  tags?: string[];
 }

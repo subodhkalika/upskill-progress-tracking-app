@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import { logoutUser, getProfile, loginUser, refreshAccessToken } from '../handlers/auth';
-import { LoginBody } from '../interfaces/user';
+import { logoutUser, getProfile, loginUser, refreshAccessToken, signupUser } from '../handlers/auth';
+import { LoginBody, SignupBody } from '../interfaces/user';
 import { FastifyPluginAsync } from 'fastify';
 
 /**
@@ -8,6 +8,9 @@ import { FastifyPluginAsync } from 'fastify';
  * Defines endpoints for user login, logout, token refresh and profile retrieval.
  */
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance, options: FastifyPluginOptions) => {
+  // Route for user signup
+  fastify.post<{ Body: SignupBody }>('/signup', signupUser);
+
   // Route for user login
   fastify.post<{ Body: LoginBody }>('/login', loginUser);
 

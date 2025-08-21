@@ -24,7 +24,16 @@ export interface UpdateUserInput {
   subscription?: SubscriptionPlan;
 }
 
+
 // For login
 export interface LoginBody {
   email: string;
+  password: string;
+}
+
+// For signup
+export interface SignupBody {
+  email: string;
+  password: string;
+  name: string;
 }

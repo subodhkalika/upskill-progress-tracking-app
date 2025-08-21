@@ -11,7 +11,7 @@ import skillRoutes from './routes/skills';
 import timeLogRoutes from './routes/timelogs';
 import achievementRoutes from './routes/achievements';
 import learningStatsRoutes from './routes/learning-stats';
-import cookie from '@fastify/cookie';
+import cookie, { FastifyCookieOptions } from '@fastify/cookie';
 import jwt from '@fastify/jwt';
 import cors from '@fastify/cors';
 
@@ -24,6 +24,15 @@ declare module 'fastify' {
       id: string;
       email: string;
     };
+  }
+}
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    user: {
+      id: string;
+      email: string;
+    }
   }
 }
 
@@ -103,8 +112,8 @@ async function bootstrap() {
     await app.register(dbPlugin);
     app.log.info('Prisma DB plugin registered.');
     
-    app.register(cookie);
-    app.register(jwt, loadJwtConfig());
+    await app.register(cookie);
+    await app.register(jwt, loadJwtConfig());
     app.log.info('JWT plugin registered.');
 
     // Register auth plugin

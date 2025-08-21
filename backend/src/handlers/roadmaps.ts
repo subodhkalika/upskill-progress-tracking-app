@@ -1,16 +1,29 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateRoadmapInput, UpdateRoadmapInput } from '../interfaces/roadmap';
 
+const manageTags = async (prisma: any, tags: string[]) => {
+  const tagOperations = tags.map(tag => 
+    prisma.tag.upsert({
+      where: { name: tag },
+      update: {},
+      create: { name: tag },
+    })
+  );
+  const createdOrFoundTags = await Promise.all(tagOperations);
+  return createdOrFoundTags.map(tag => ({ id: tag.id }));
+};
+
 export const createRoadmap = async (request: FastifyRequest<{ Body: CreateRoadmapInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
-  const { title, description, status } = request.body;
+  const { title, description, status, tags } = request.body;
   try {
     const newRoadmap = await request.server.prisma.roadmap.create({
       data: {
         title,
         description,
         status,
-        userId
+        userId,
+        tags: tags ? { connect: await manageTags(request.server.prisma, tags) } : undefined,
       }
     });
     return reply.status(201).send(newRoadmap);
@@ -28,6 +41,7 @@ export const getAllRoadmaps = async (request: FastifyRequest, reply: FastifyRepl
       orderBy: { updatedAt: 'desc' },
       include: {
         skills: true,
+        tags: true,
         _count: {
           select: { milestones: true }
         }
@@ -55,7 +69,8 @@ export const getRoadmapById = async (request: FastifyRequest<{ Params: { id: str
             }
           }
         },
-        skills: true
+        skills: true,
+        tags: true,
       }
     });
     if (!roadmap) {
@@ -71,19 +86,25 @@ export const getRoadmapById = async (request: FastifyRequest<{ Params: { id: str
 export const updateRoadmapById = async (request: FastifyRequest<{ Params: { id: string }, Body: UpdateRoadmapInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;
-  const updateData = request.body;
+  const { tags, ...updateData } = request.body;
   try {
-    const roadmap = await request.server.prisma.roadmap.updateMany({
+    const roadmap = await request.server.prisma.roadmap.findFirst({
       where: { id, userId },
-      data: {
-        ...updateData,
-        lastUpdated: new Date()
-      }
     });
-    if (roadmap.count === 0) {
+
+    if (!roadmap) {
       return reply.status(404).send({ message: 'Roadmap not found or you do not have permission to update it.' });
     }
-    const updatedRoadmap = await request.server.prisma.roadmap.findUnique({ where: { id } });
+
+    const updatedRoadmap = await request.server.prisma.roadmap.update({
+      where: { id },
+      data: {
+        ...updateData,
+        lastUpdated: new Date(),
+        tags: tags ? { set: await manageTags(request.server.prisma, tags) } : undefined,
+      },
+      include: { tags: true }
+    });
     return reply.status(200).send(updatedRoadmap);
   } catch (err) {
     request.log.error(err);

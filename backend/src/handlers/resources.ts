@@ -1,13 +1,27 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateResourceInput, UpdateResourceInput } from '../interfaces/resource';
 
+const manageTags = async (prisma: any, tags: string[]) => {
+  const tagOperations = tags.map(tag => 
+    prisma.tag.upsert({
+      where: { name: tag },
+      update: {},
+      create: { name: tag },
+    })
+  );
+  const createdOrFoundTags = await Promise.all(tagOperations);
+  return createdOrFoundTags.map(tag => ({ id: tag.id }));
+};
+
 export const createResource = async (request: FastifyRequest<{ Body: CreateResourceInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
+  const { tags, ...resourceData } = request.body;
   try {
     const newResource = await request.server.prisma.resource.create({
       data: {
-        ...request.body,
-        userId
+        ...resourceData,
+        userId,
+        tags: tags ? { connect: await manageTags(request.server.prisma, tags) } : undefined,
       }
     });
     return reply.status(201).send(newResource);
@@ -25,7 +39,8 @@ export const getAllResources = async (request: FastifyRequest, reply: FastifyRep
       orderBy: { addedOn: 'desc' },
       include: {
         skills: true,
-        categories: true
+        categories: true,
+        tags: true,
       }
     });
     return reply.status(200).send(resources);
@@ -44,7 +59,8 @@ export const getResourceById = async (request: FastifyRequest<{ Params: { id: st
       include: {
         skills: true,
         categories: true,
-        tasks: true
+        tasks: true,
+        tags: true,
       }
     });
     if (!resource) {
@@ -60,16 +76,24 @@ export const getResourceById = async (request: FastifyRequest<{ Params: { id: st
 export const updateResourceById = async (request: FastifyRequest<{ Params: { id: string }, Body: UpdateResourceInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;
-  const updateData = request.body;
+  const { tags, ...updateData } = request.body;
   try {
-    const resource = await request.server.prisma.resource.updateMany({
+    const resource = await request.server.prisma.resource.findFirst({
       where: { id, userId },
-      data: updateData
     });
-    if (resource.count === 0) {
+
+    if (!resource) {
       return reply.status(404).send({ message: 'Resource not found or you do not have permission to update it.' });
     }
-    const updatedResource = await request.server.prisma.resource.findUnique({ where: { id } });
+
+    const updatedResource = await request.server.prisma.resource.update({
+      where: { id },
+      data: {
+        ...updateData,
+        tags: tags ? { set: await manageTags(request.server.prisma, tags) } : undefined,
+      },
+      include: { tags: true }
+    });
     return reply.status(200).send(updatedResource);
   } catch (err) {
     request.log.error(err);

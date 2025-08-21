@@ -2,6 +2,7 @@ export interface CreateRoadmapInput {
   title: string;
   description: string;
   status: string;
+  tags?: string[];
 }
 
 export interface UpdateRoadmapInput {
@@ -9,4 +10,5 @@ export interface UpdateRoadmapInput {
   description?: string;
   status?: string;
   timeSpent?: number;
+  tags?: string[];
 }
