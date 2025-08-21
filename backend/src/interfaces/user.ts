@@ -1,24 +1,30 @@
-import { User as PrismaUser } from '@prisma/client';
+import { User as PrismaUser, SubscriptionPlan } from '@prisma/client';
 
-// A user object interface, excluding the password hash for public use
-export interface User {
+// Public user data
+export interface User extends Omit<PrismaUser, 'email'> {
   id: string;
-  email: string;
+  name: string;
+  profilePicture?: string | null;
+  subscription: SubscriptionPlan;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Interface for a user with password hash (for internal use, e.g., login)
-export interface UserWithPassword extends PrismaUser {}
-
-// Request body for user registration
-export interface RegisterBody {
+// For creating a new user
+export interface CreateUserInput {
   email: string;
-  password: string;
+  name: string;
+  profilePicture?: string;
 }
 
-// Request body for user login
+// For updating an existing user
+export interface UpdateUserInput {
+  name?: string;
+  profilePicture?: string;
+  subscription?: SubscriptionPlan;
+}
+
+// For login
 export interface LoginBody {
   email: string;
-  password: string;
 }

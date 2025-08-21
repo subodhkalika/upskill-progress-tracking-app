@@ -1,35 +1,35 @@
 import { FastifyInstance } from 'fastify';
-import * as resourceHandlers from '../handlers/resources';
-import { CreateResourceInput, UpdateResourceInput } from '../interfaces/resource';
+import * as achievementHandlers from '../handlers/achievements';
+import { CreateAchievementInput, UpdateAchievementInput } from '../interfaces/achievement';
 
 export default async function (fastify: FastifyInstance) {
-  fastify.post<{ Body: CreateResourceInput }>(
+  fastify.post<{ Body: CreateAchievementInput }>(
     '/', 
     { onRequest: [fastify.authenticate] }, 
-    resourceHandlers.createResource
+    achievementHandlers.createAchievement
   );
   
   fastify.get(
     '/', 
     { onRequest: [fastify.authenticate] }, 
-    resourceHandlers.getAllResources
+    achievementHandlers.getAllAchievements
   );
 
   fastify.get<{ Params: { id: string } }>(
     '/:id', 
     { onRequest: [fastify.authenticate] }, 
-    resourceHandlers.getResourceById
+    achievementHandlers.getAchievementById
   );
 
-  fastify.put<{ Params: { id: string }, Body: UpdateResourceInput }>(
+  fastify.put<{ Params: { id: string }, Body: UpdateAchievementInput }>(
     '/:id', 
     { onRequest: [fastify.authenticate] }, 
-    resourceHandlers.updateResourceById
+    achievementHandlers.updateAchievementById
   );
 
   fastify.delete<{ Params: { id: string } }>(
     '/:id', 
     { onRequest: [fastify.authenticate] }, 
-    resourceHandlers.deleteResourceById
+    achievementHandlers.deleteAchievementById
   );
 }

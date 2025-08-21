@@ -7,7 +7,7 @@ services:
     image: postgres:16-alpine # Using a lightweight Alpine-based PostgreSQL image
     restart: always
     environment:
-      POSTGRES_DB: my_db # Our database name
+      POSTGRES_DB: my_db1 # Our database name
       POSTGRES_USER: user # Database user
       POSTGRES_PASSWORD: password # Database password (change this for production!)
     ports:
@@ -29,7 +29,7 @@ services:
     depends_on:
       - db # Backend depends on the database being ready
     environment:
-      DATABASE_URL: postgres://user:password@db:5432/my_db # Connection string for backend to connect to DB
+      DATABASE_URL: postgres://user:password@db:5432/my_db1 # Connection string for backend to connect to DB
       NODE_ENV: development
 
   # Frontend Service (React)

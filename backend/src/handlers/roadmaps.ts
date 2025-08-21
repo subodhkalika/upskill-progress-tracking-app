@@ -1,76 +1,97 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { RoadmapInput } from '../interfaces/roadmap';
+import { CreateRoadmapInput, UpdateRoadmapInput } from '../interfaces/roadmap';
 
-export const createRoadmap = async (request: FastifyRequest<{ Body: RoadmapInput }>, reply: FastifyReply) => {
+export const createRoadmap = async (request: FastifyRequest<{ Body: CreateRoadmapInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
-  const { title, description, isPublic } = request.body;
+  const { title, description, status } = request.body;
   try {
     const newRoadmap = await request.server.prisma.roadmap.create({
       data: {
         title,
         description,
-        isPublic: isPublic ?? false,
+        status,
         userId
       }
     });
-    return reply.status(201).send({ message: 'Roadmap created successfully.', roadmap: newRoadmap });
+    return reply.status(201).send(newRoadmap);
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });
   }
 };
 
-export const getRoadmaps = async (request: FastifyRequest, reply: FastifyReply) => {
+export const getAllRoadmaps = async (request: FastifyRequest, reply: FastifyReply) => {
   const userId = request.user.id;
   try {
     const roadmaps = await request.server.prisma.roadmap.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        skills: true,
+        _count: {
+          select: { milestones: true }
+        }
+      }
     });
-    return reply.status(200).send({ roadmaps });
+    return reply.status(200).send(roadmaps);
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });
   }
 };
 
-export const getRoadmap = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+export const getRoadmapById = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;
   try {
     const roadmap = await request.server.prisma.roadmap.findFirst({
-      where: { id, userId }
+      where: { id, userId },
+      include: {
+        milestones: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            _count: {
+              select: { tasks: true }
+            }
+          }
+        },
+        skills: true
+      }
     });
     if (!roadmap) {
       return reply.status(404).send({ message: 'Roadmap not found.' });
     }
-    return reply.status(200).send({ roadmap });
+    return reply.status(200).send(roadmap);
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });
   }
 };
 
-export const updateRoadmap = async (request: FastifyRequest<{ Params: { id: string }, Body: Partial<RoadmapInput> }>, reply: FastifyReply) => {
+export const updateRoadmapById = async (request: FastifyRequest<{ Params: { id: string }, Body: UpdateRoadmapInput }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;
   const updateData = request.body;
   try {
     const roadmap = await request.server.prisma.roadmap.updateMany({
       where: { id, userId },
-      data: updateData
+      data: {
+        ...updateData,
+        lastUpdated: new Date()
+      }
     });
     if (roadmap.count === 0) {
-      return reply.status(404).send({ message: 'Roadmap not found.' });
+      return reply.status(404).send({ message: 'Roadmap not found or you do not have permission to update it.' });
     }
-    return reply.status(200).send({ message: 'Roadmap updated successfully.' });
+    const updatedRoadmap = await request.server.prisma.roadmap.findUnique({ where: { id } });
+    return reply.status(200).send(updatedRoadmap);
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });
   }
 };
 
-export const deleteRoadmap = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+export const deleteRoadmapById = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;
   try {
@@ -78,9 +99,9 @@ export const deleteRoadmap = async (request: FastifyRequest<{ Params: { id: stri
       where: { id, userId }
     });
     if (roadmap.count === 0) {
-      return reply.status(404).send({ message: 'Roadmap not found.' });
+      return reply.status(404).send({ message: 'Roadmap not found or you do not have permission to delete it.' });
     }
-    return reply.status(200).send({ message: 'Roadmap deleted successfully.' });
+    return reply.status(204).send();
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ message: 'Internal server error.' });

@@ -3,9 +3,14 @@ import { config } from './config';
 import dbPlugin from './plugins/db';
 import authPlugin from './plugins/auth';
 import authRoutes from './routes/auth';
-import resourceRoutes from './routes/resources'; // Import new routes
-import roadmapRoutes from './routes/roadmaps'; // Import roadmap routes
-import taskRoutes from './routes/tasks'; // Import task routes
+import resourceRoutes from './routes/resources';
+import roadmapRoutes from './routes/roadmaps';
+import taskRoutes from './routes/tasks';
+import milestoneRoutes from './routes/milestones';
+import skillRoutes from './routes/skills';
+import timeLogRoutes from './routes/timelogs';
+import achievementRoutes from './routes/achievements';
+import learningStatsRoutes from './routes/learning-stats';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
 import cors from '@fastify/cors';
@@ -13,6 +18,12 @@ import cors from '@fastify/cors';
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+  interface FastifyRequest {
+    user: {
+      id: string;
+      email: string;
+    };
   }
 }
 
@@ -53,7 +64,8 @@ const loadDecorators = async () => {
   // Hook to verify JWT for protected routes
   app.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
     try {
-      await request.jwtVerify();
+      const decoded = await request.jwtVerify() as { id: string, email: string };
+      request.user = decoded;
     } catch (err) {
       reply.send(err);
     }
@@ -61,24 +73,20 @@ const loadDecorators = async () => {
 }
 
 const loadRoutes = async () => {
-  // Register auth routes
-  await app.register(authRoutes, { prefix: '/auth' });
-  app.log.info('Authentication routes registered.');
-
-  // Register resources routes
-  await app.register(resourceRoutes, { prefix: '/resources' }); // Register new routes
-  app.log.info('Resources routes registered.');
-
-  // Register roadmap routes
-  await app.register(roadmapRoutes, { prefix: '/roadmaps' }); // Register roadmap routes
-  app.log.info('Roadmap routes registered.');
-
-  // Register task routes
-  await app.register(taskRoutes, { prefix: '/tasks' }); // Register task routes
-  app.log.info('Task routes registered.');
+  await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(roadmapRoutes, { prefix: '/api/roadmaps' });
+  await app.register(milestoneRoutes, { prefix: '/api/milestones' });
+  await app.register(taskRoutes, { prefix: '/api/tasks' });
+  await app.register(resourceRoutes, { prefix: '/api/resources' });
+  await app.register(skillRoutes, { prefix: '/api/skills' });
+  await app.register(timeLogRoutes, { prefix: '/api/timelogs' });
+  await app.register(achievementRoutes, { prefix: '/api/achievements' });
+  await app.register(learningStatsRoutes, { prefix: '/api/learning-stats' });
+  
+  app.log.info('All routes registered.');
 
   // Root route
-  app.get('/', async (request: FastifyRequest,  reply: FastifyReply) => {
+  app.get('/api', async (request: FastifyRequest,  reply: FastifyReply) => {
     reply.send({ message: 'Fastify API is running!' });
   }); 
 }
@@ -88,6 +96,7 @@ async function bootstrap() {
     await app.register(cors, {
       origin: 'http://localhost:3001', // Or set to your frontend URL like "http://localhost:3000"
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
     });
     
     // Register DB plugin first
@@ -106,7 +115,6 @@ async function bootstrap() {
     app.log.info('Auth decorators loaded.');
 
     await loadRoutes();
-    app.log.info('Routes loaded.');
 
     // Start server
     await app.listen({ port: config.port, host: '0.0.0.0' });
