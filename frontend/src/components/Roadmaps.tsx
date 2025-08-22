@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { Milestones } from './Milestones';
 import { useState, useEffect } from 'react';
 import { apiClient } from '../utils/api';
 import type { Roadmap } from '../types';
@@ -37,6 +38,7 @@ export function Roadmaps() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRoadmap, setSelectedRoadmap] = useState<Roadmap | null>(null);
   
   useEffect(() => {
     const fetchRoadmaps = async () => {
@@ -95,24 +97,34 @@ export function Roadmaps() {
     return <Target className="w-4 h-4 text-gray-600" />;
   };
 
+  // Navigation functions
+  const navigateToMilestones = (roadmap: Roadmap) => {
+    setSelectedRoadmap(roadmap);
+  };
+
+  const navigateBackToRoadmaps = () => {
+    setSelectedRoadmap(null);
+  };
+
+  // Filter functions
   const filterRoadmaps = (status: string) => {
     if (status === 'all') return roadmaps;
     return roadmaps.filter(roadmap => roadmap.status === status);
   };
 
-  const RoadmapCard = ({ roadmap }: { roadmap: any }) => (
-    <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
+  const RoadmapCard = ({ roadmap }: { roadmap: Roadmap }) => (
+    <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => navigateToMilestones(roadmap)}>
       <CardContent className="p-4 lg:p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-2">
-            {getStatusIcon(roadmap.status, roadmap.progress)}
+            {getStatusIcon(roadmap.status, roadmap.progress ?? 0)}
             <Badge className={`text-xs border ${getStatusColor(roadmap.status)}`} variant="outline">
               {roadmap.status}
             </Badge>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -132,12 +144,12 @@ export function Roadmaps() {
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{roadmap.description}</p>
           
           <div className="flex flex-wrap gap-1 mb-3">
-            {roadmap.tags.slice(0, 2).map((tag: string, index: number) => (
+            {roadmap.tags?.slice(0, 2).map((tag: string, index: number) => (
               <Badge key={index} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
             ))}
-            {roadmap.tags.length > 2 && (
+            {roadmap.tags?.length && roadmap.tags.length > 2 && (
               <Badge variant="secondary" className="text-xs">
                 +{roadmap.tags.length - 2}
               </Badge>
@@ -194,6 +206,11 @@ export function Roadmaps() {
 
   if (error) {
     return <div>{error}</div>;
+  }
+
+  // If a roadmap is selected, show the milestones view
+  if (selectedRoadmap) {
+    return <Milestones roadmap={selectedRoadmap} onBack={navigateBackToRoadmaps} />;
   }
 
   return (

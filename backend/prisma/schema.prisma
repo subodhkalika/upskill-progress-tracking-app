@@ -36,6 +36,19 @@ enum TaskStatus {
   COMPLETED
 }
 
+enum MilestoneStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  LOCKED
+}
+
+enum RoadmapStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -48,7 +61,7 @@ model User {
   roadmaps       Roadmap[]
   tasks          Task[]
   achievements   Achievement[]
-  resources      Resource[] // Saved personal resources
+  resources      Resource[]
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -73,7 +86,7 @@ model Roadmap {
 
   title          String
   description    String
-  status         String
+  status         RoadmapStatus   @default(PLANNED)
   timeSpent      Float        @default(0)
   lastUpdated    DateTime     @default(now())
 
@@ -92,6 +105,7 @@ model Milestone {
 
   title          String
   description    String?
+  status         MilestoneStatus   @default(PLANNED)
   dueDate        DateTime?
   completed      Boolean      @default(false)
 
@@ -154,7 +168,7 @@ model Resource {
   skills      Skill[]          @relation("ResourceSkills")
   categories  Skill[]          @relation("ResourceCategories")
   tasks       Task[]           @relation("TaskResources")
-  tags        Tag[]            @relation("ResourceTags")  // 🔥 many-to-many with Tag
+  tags        Tag[]            @relation("ResourceTags")
 
   addedOn     DateTime         @default(now())
 }

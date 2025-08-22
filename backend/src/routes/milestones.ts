@@ -9,6 +9,12 @@ export default async function (fastify: FastifyInstance) {
     milestoneHandlers.createMilestone
   );
 
+  fastify.get(
+    '/',
+    { onRequest: [fastify.authenticate] },
+    milestoneHandlers.getAllMilestones
+  );
+
   fastify.get<{ Params: { id: string } }>(
     '/:id', 
     { onRequest: [fastify.authenticate] }, 

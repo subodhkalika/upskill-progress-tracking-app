@@ -30,6 +30,27 @@ export const createMilestone = async (request: FastifyRequest<{ Body: CreateMile
   }
 };
 
+export const getAllMilestones = async (request: FastifyRequest, reply: FastifyReply) => {
+  const userId = request.user.id;
+  try {
+    const milestones = await request.server.prisma.milestone.findMany({
+      where: {
+        roadmap: {
+          userId,
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        tasks: true,
+      },
+    });
+    return reply.status(200).send(milestones);
+  } catch (err) {
+    request.log.error(err);
+    return reply.status(500).send({ message: 'Internal server error.' });
+  }
+};
+
 export const getMilestoneById = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
   const userId = request.user.id;
   const { id } = request.params;

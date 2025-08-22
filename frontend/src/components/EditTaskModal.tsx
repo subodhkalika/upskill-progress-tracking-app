@@ -38,7 +38,7 @@ export function EditTaskModal({ isOpen, onClose, onTaskUpdated, task }: EditTask
       setDescription(task.description || '');
       setPriority(task.priority);
       setStatus(task.status);
-      setTags(task.tags.map(t => t.name).join(', '));
+      setTags(task.tags?.map(t => t.name).join(', '));
       setEstimatedTime(task.estimatedTime?.toString() || '');
     }
   }, [task]);

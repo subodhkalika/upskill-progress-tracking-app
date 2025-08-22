@@ -1,13 +1,23 @@
-import { PrismaClient, TaskPriority, ResourceStatus, ResourceType, SubscriptionPlan } from '@prisma/client'
+import { PrismaClient, TaskPriority, ResourceStatus, ResourceType, SubscriptionPlan, TaskStatus, MilestoneStatus, RoadmapStatus } from '@prisma/client';
+import { hashPassword } from '../src/utils/password';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+
+// helper to make unique values
+const unique = (base: string) => {
+  const uniqueValue = `${base}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  console.log('unique value : ', uniqueValue);
+  return uniqueValue;
+};
 
 async function main() {
-  // Create User
+  // Create User with unique email
+  const passwordHash = await hashPassword('password123');
   const user = await prisma.user.create({
     data: {
-      email: 'john.doe@example.com',
-      name: 'John Doe',
+      email: `${unique('subodh')}@example.com`,
+      passwordHash,
+      name: 'Subodh K.',
       profilePicture: 'https://example.com/profile.jpg',
       subscription: SubscriptionPlan.FREE,
       learningStats: {
@@ -20,150 +30,149 @@ async function main() {
         },
       },
     },
-  })
+  });
 
-  // Create Skills
-  const backendDevSkill = await prisma.skill.create({
-    data: { name: 'Backend Development' },
-  })
-  const nodeJsSkill = await prisma.skill.create({
-    data: { name: 'Node.js' },
-  })
-  const dockerSkill = await prisma.skill.create({
-    data: { name: 'Docker' },
-  })
-  const systemDesignSkill = await prisma.skill.create({
-    data: { name: 'System Design' },
-  })
+  // Create Skills with unique names
+  const [backendDevSkill, nodeJsSkill, dockerSkill, systemDesignSkill] =
+    await Promise.all([
+      prisma.skill.create({ data: { name: unique('Backend Development') } }),
+      prisma.skill.create({ data: { name: unique('Node.js') } }),
+      prisma.skill.create({ data: { name: unique('Docker') } }),
+      prisma.skill.create({ data: { name: unique('System Design') } }),
+    ]);
+
+  // Create Tags with unique names
+  const [beginnerTag, advancedTag] = await Promise.all([
+    prisma.tag.create({ data: { name: unique('Beginner') } }),
+    prisma.tag.create({ data: { name: unique('Advanced') } }),
+  ]);
 
   // Create Roadmap
   const roadmap = await prisma.roadmap.create({
     data: {
-      title: 'Backend Development Mastery',
+      title: unique('Backend Development Mastery'),
       description: 'Learn backend development using Node.js and related technologies.',
-      status: 'active',
+      status: RoadmapStatus.ACTIVE,
       userId: user.id,
       skills: {
-        connect: [{ id: backendDevSkill.id }, { id: nodeJsSkill.id }, { id: systemDesignSkill.id }],
+        connect: [
+          { id: backendDevSkill.id },
+          { id: nodeJsSkill.id },
+          { id: systemDesignSkill.id },
+        ],
       },
+      tags: { connect: [{ id: beginnerTag.id }] },
     },
-  })
+  });
 
-  // Create Milestones after Roadmap is created
-  const milestones = await prisma.milestone.createMany({
+  // Create Milestones
+  await prisma.milestone.createMany({
     data: [
       {
-        title: 'Learn Node.js Basics',
+        title: unique('Learn Node.js Basics'),
         description: 'Understand Node.js fundamentals and how to work with Express.',
+        status: MilestoneStatus.COMPLETED,
         completed: true,
-        roadmapId: roadmap.id, // Linking to the roadmap
+        roadmapId: roadmap.id,
       },
       {
-        title: 'Docker for Developers',
+        title: unique('Docker for Developers'),
         description: 'Learn how to containerize applications using Docker.',
+        status: MilestoneStatus.ACTIVE,
         completed: false,
-        roadmapId: roadmap.id, // Linking to the roadmap
+        roadmapId: roadmap.id,
       },
       {
-        title: 'System Design Fundamentals',
+        title: unique('System Design Fundamentals'),
         description: 'Master the principles of system design.',
+        status: MilestoneStatus.PLANNED,
         completed: false,
-        roadmapId: roadmap.id, // Linking to the roadmap
+        roadmapId: roadmap.id,
       },
     ],
-  })
+  });
 
-  // Fetch the roadmap with milestones for reference in tasks
   const fullRoadmap = await prisma.roadmap.findUnique({
     where: { id: roadmap.id },
     include: { milestones: true },
   });
 
-  if (!fullRoadmap) {
-    console.error('Could not find the created roadmap.');
-    process.exit(1);
-  }
+  if (!fullRoadmap) throw new Error('Could not find roadmap after creation');
 
   // Create Resources
-  const resource1 = await prisma.resource.create({
-    data: {
-      userId: user.id,
-      title: 'Node.js Complete Guide',
-      description: 'Comprehensive course on Node.js from basics to advanced topics.',
-      type: ResourceType.BOOK,
-      status: ResourceStatus.COMPLETED,
-      duration: 20,
-      skills: {
-        connect: [{ id: nodeJsSkill.id }],
+  const [resource1, resource2] = await Promise.all([
+    prisma.resource.create({
+      data: {
+        userId: user.id,
+        title: unique('Node.js Complete Guide'),
+        description: 'Comprehensive course on Node.js from basics to advanced topics.',
+        type: ResourceType.BOOK,
+        status: ResourceStatus.COMPLETED,
+        duration: 20,
+        skills: { connect: [{ id: nodeJsSkill.id }] },
+        tags: { connect: [{ id: beginnerTag.id }] },
       },
-    },
-  })
-
-  const resource2 = await prisma.resource.create({
-    data: {
-      userId: user.id,
-      title: 'Docker Fundamentals Video',
-      description: 'A video series that explains the basics of Docker and containers.',
-      type: ResourceType.VIDEO,
-      status: ResourceStatus.NOT_STARTED,
-      duration: 4,
-      skills: {
-        connect: [{ id: dockerSkill.id }],
+    }),
+    prisma.resource.create({
+      data: {
+        userId: user.id,
+        title: unique('Docker Fundamentals Video'),
+        description: 'A video series that explains the basics of Docker and containers.',
+        type: ResourceType.VIDEO,
+        status: ResourceStatus.NOT_STARTED,
+        duration: 4,
+        skills: { connect: [{ id: dockerSkill.id }] },
+        tags: { connect: [{ id: advancedTag.id }] },
       },
-    },
-  })
+    }),
+  ]);
 
   // Create Tasks
-  const task1 = await prisma.task.create({
-    data: {
-      userId: user.id,
-      name: 'Complete Node.js Basics module',
-      description: 'Complete the first module of the Node.js course.',
-      priority: TaskPriority.HIGH,
-      milestoneId: fullRoadmap.milestones[0].id,
-      estimatedTime: 5,
-      progress: 80,
-      resources: {
-        connect: [{ id: resource1.id }],
+  const [task1, task2, task3] = await Promise.all([
+    prisma.task.create({
+      data: {
+        userId: user.id,
+        name: unique('Complete Node.js Basics module'),
+        description: 'Complete the first module of the Node.js course.',
+        priority: TaskPriority.HIGH,
+        milestoneId: fullRoadmap.milestones[0].id,
+        estimatedTime: 5,
+        progress: 80,
+        status: TaskStatus.IN_PROGRESS,
+        resources: { connect: [{ id: resource1.id }] },
+        skills: { connect: [{ id: nodeJsSkill.id }] },
+        tags: { connect: [{ id: beginnerTag.id }] },
       },
-      skills: {
-        connect: [{ id: nodeJsSkill.id }],
+    }),
+    prisma.task.create({
+      data: {
+        userId: user.id,
+        name: unique('Watch Docker Fundamentals Video'),
+        description: 'Go through chapters 1-3 of the Docker Fundamentals video.',
+        priority: TaskPriority.MEDIUM,
+        milestoneId: fullRoadmap.milestones[1].id,
+        estimatedTime: 3,
+        progress: 0,
+        status: TaskStatus.PENDING,
+        resources: { connect: [{ id: resource2.id }] },
+        skills: { connect: [{ id: dockerSkill.id }] },
       },
-    },
-  })
-
-  const task2 = await prisma.task.create({
-    data: {
-      userId: user.id,
-      name: 'Watch Docker Fundamentals Video',
-      description: 'Go through chapters 1-3 of the Docker Fundamentals video.',
-      priority: TaskPriority.MEDIUM,
-      milestoneId: fullRoadmap.milestones[1].id,
-      estimatedTime: 3,
-      progress: 0,
-      resources: {
-        connect: [{ id: resource2.id }],
+    }),
+    prisma.task.create({
+      data: {
+        userId: user.id,
+        name: unique('Complete System Design module'),
+        description: 'Learn about system design principles and practice.',
+        priority: TaskPriority.LOW,
+        milestoneId: fullRoadmap.milestones[2].id,
+        estimatedTime: 8,
+        progress: 40,
+        status: TaskStatus.IN_PROGRESS,
+        skills: { connect: [{ id: systemDesignSkill.id }] },
+        tags: { connect: [{ id: advancedTag.id }] },
       },
-      skills: {
-        connect: [{ id: dockerSkill.id }],
-      },
-    },
-  })
-
-  const task3 = await prisma.task.create({
-    data: {
-      userId: user.id,
-      name: 'Complete System Design module',
-      description: 'Learn about system design principles and practice.',
-      priority: TaskPriority.LOW,
-      milestoneId: fullRoadmap.milestones[2].id,
-      estimatedTime: 8,
-      progress: 40,
-      skills: {
-        connect: [{ id: systemDesignSkill.id }],
-      },
-    },
-  })
+    }),
+  ]);
 
   // Create Time Logs
   await prisma.timeLog.createMany({
@@ -179,36 +188,34 @@ async function main() {
         note: 'Watched Docker video chapters 1-2.',
       },
     ],
-  })
+  });
 
-  // Create Achievement
-  const achievement = await prisma.achievement.create({
-    data: {
-      userId: user.id,
-      title: 'Node.js Master',
-      description: 'Completed the Node.js Basics milestone.',
-      icon: '🚀',
-      earnedOn: new Date(),
-    },
-  })
+  // Create Achievements
+  await prisma.achievement.createMany({
+    data: [
+      {
+        userId: user.id,
+        title: unique('Node.js Master'),
+        description: 'Completed the Node.js Basics milestone.',
+        icon: '🚀',
+      },
+      {
+        userId: user.id,
+        title: unique('Docker Explorer'),
+        description: 'Started Docker Fundamentals module.',
+        icon: '🐳',
+      },
+    ],
+  });
 
-  const achievement2 = await prisma.achievement.create({
-    data: {
-      userId: user.id,
-      title: 'Docker Expert',
-      description: 'Completed Docker Fundamentals module.',
-      icon: '🔥',
-      earnedOn: new Date(),
-    },
-  })
-
-  console.log('Seeding done!')
+  console.log('✅ Seeding done!');
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });
