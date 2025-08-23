@@ -8,6 +8,7 @@ export const TaskStatus = {
   IN_PROGRESS: 'IN_PROGRESS' as const,
   COMPLETED: 'COMPLETED' as const,
 } as const;
+export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
 
 export interface User {
   id: string;
@@ -71,7 +72,7 @@ export const TaskPriority = {
   MEDIUM: 'MEDIUM' as const,
   HIGH: 'HIGH' as const,
 } as const;
-
+export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
 
 export interface Task {
   id: string;

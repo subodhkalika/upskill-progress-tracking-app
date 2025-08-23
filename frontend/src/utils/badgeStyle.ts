@@ -1,4 +1,4 @@
-import { ResourceStatus, ResourceType, TaskPriority } from "../types";
+import { ResourceStatus, TaskPriority } from "../types";
 import { MilestoneStatus } from "../types/milestones";
 
 /**

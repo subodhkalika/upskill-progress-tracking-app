@@ -116,7 +116,7 @@ export function Milestones() {
             isExpanded={expandedMilestones.has(milestone.id)}
             onToggle={() => toggleMilestone(milestone.id)}
             onTaskClick={openTaskDetails}
-            getTasksForMilestone={(milestoneId) => milestone.tasks || []}
+            getTasksForMilestone={(milestoneId: string) => milestoneId && milestone.tasks || []}
           />
         ))}
       </div>

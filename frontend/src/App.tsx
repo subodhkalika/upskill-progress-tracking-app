@@ -6,7 +6,7 @@ import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { Dashboard } from './components/Dashboard';
 import { Roadmaps } from './components/Roadmaps';
-import { Milestones } from './components/milestones';
+import { Milestones } from './components/Milestones';
 import { TaskManager } from './components/TaskManager';
 import { ResourceLibrary } from './components/ResourceLibrary';
 import { Analytics } from './components/Analytics';

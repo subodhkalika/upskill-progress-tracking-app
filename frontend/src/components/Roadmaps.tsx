@@ -26,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Milestones } from './Milestones';
 import { useState, useEffect } from 'react';
 import { apiClient } from '../utils/api';
 import type { Roadmap } from '../types';
@@ -39,7 +38,6 @@ export function Roadmaps() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRoadmap, setSelectedRoadmap] = useState<Roadmap | null>(null);
   
   useEffect(() => {
     const fetchRoadmaps = async () => {
@@ -47,7 +45,6 @@ export function Roadmaps() {
         const data = await apiClient.get('/api/roadmaps');
         // Assuming the API returns an array of roadmaps
         // We'll add some frontend-specific calculations here
-        console.log(data)
         const processedRoadmaps = data.map((roadmap: any) => ({
           ...roadmap,
           progress: Math.floor((roadmap.milestones?.filter((m: any) => m.completed)?.length / roadmap.milestones?.length) * 100) || 0,
@@ -57,7 +54,6 @@ export function Roadmaps() {
         }));
         setRoadmaps(processedRoadmaps);
       } catch (err) {
-        console.log(err)
         setError('Failed to fetch roadmaps.');
       } finally {
         setLoading(false);
