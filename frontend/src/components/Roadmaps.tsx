@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -97,107 +98,100 @@ export function Roadmaps() {
     return <Target className="w-4 h-4 text-gray-600" />;
   };
 
-  // Navigation functions
-  const navigateToMilestones = (roadmap: Roadmap) => {
-    setSelectedRoadmap(roadmap);
-  };
-
-  const navigateBackToRoadmaps = () => {
-    setSelectedRoadmap(null);
-  };
-
   // Filter functions
   const filterRoadmaps = (status: string) => {
     if (status === 'all') return roadmaps;
     return roadmaps.filter(roadmap => roadmap.status === status);
   };
 
-  const RoadmapCard = ({ roadmap }: { roadmap: Roadmap }) => (
-    <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => navigateToMilestones(roadmap)}>
-      <CardContent className="p-4 lg:p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            {getStatusIcon(roadmap.status, roadmap.progress ?? 0)}
-            <Badge className={`text-xs border ${getStatusColor(roadmap.status)}`} variant="outline">
-              {roadmap.status}
-            </Badge>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit Roadmap</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="mb-4">
-          <h3 className="font-semibold text-base lg:text-lg text-foreground mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-            {roadmap.title}
-          </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{roadmap.description}</p>
-          
-          <div className="flex flex-wrap gap-1 mb-3">
-            {roadmap.tags?.slice(0, 2).map((tag: string, index: number) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {tag}
+  const RoadmapCard = ({ roadmap }: { roadmap: any }) => (
+    <Link to={`/roadmaps/${roadmap.id}/milestones`} className="block">
+      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group h-full">
+        <CardContent className="p-4 lg:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              {getStatusIcon(roadmap.status, roadmap.progress)}
+              <Badge className={`text-xs border ${getStatusColor(roadmap.status)}`} variant="outline">
+                {roadmap.status}
               </Badge>
-            ))}
-            {roadmap.tags?.length && roadmap.tags.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{roadmap.tags.length - 2}
-              </Badge>
-            )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Edit Roadmap</DropdownMenuItem>
+                <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
 
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{roadmap.progress}%</span>
+          <div className="mb-4">
+            <h3 className="font-semibold text-base lg:text-lg text-foreground mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+              {roadmap.title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{roadmap.description}</p>
+            
+            <div className="flex flex-wrap gap-1 mb-3">
+              {roadmap.tags.slice(0, 2).map((tag: string, index: number) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {roadmap.tags.length > 2 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{roadmap.tags.length - 2}
+                </Badge>
+              )}
+            </div>
           </div>
-          <Progress value={roadmap.progress} className="h-2" />
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 text-sm text-muted-foreground mb-4">
-          <div className="flex items-center">
-            <Target className="w-4 h-4 mr-2" />
-            <span>{roadmap.completedMilestones}/{roadmap.totalMilestones} milestones</span>
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{roadmap.progress}%</span>
+            </div>
+            <Progress value={roadmap.progress} className="h-2" />
           </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
-            <span>{roadmap.timeSpent}h spent</span>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Updated {new Date(roadmap.lastUpdated).toLocaleDateString()}</span>
-          <div className="space-x-2">
-            {roadmap.status === 'active' && (
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                Continue
-              </Button>
-            )}
-            {roadmap.status === 'planned' && (
-              <Button size="sm" variant="outline">
-                Start Learning
-              </Button>
-            )}
-            {roadmap.status === 'completed' && (
-              <Button size="sm" variant="outline">
-                Review
-              </Button>
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 text-sm text-muted-foreground mb-4">
+            <div className="flex items-center">
+              <Target className="w-4 h-4 mr-2" />
+              <span>{roadmap.completedMilestones}/{roadmap.totalMilestones} milestones</span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              <span>{roadmap.timeSpent}h spent</span>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Updated {new Date(roadmap.lastUpdated).toLocaleDateString()}</span>
+            <div className="space-x-2">
+              {roadmap.status === 'active' && (
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  Continue
+                </Button>
+              )}
+              {roadmap.status === 'planned' && (
+                <Button size="sm" variant="outline">
+                  Start Learning
+                </Button>
+              )}
+              {roadmap.status === 'completed' && (
+                <Button size="sm" variant="outline">
+                  Review
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 
   if (loading) {
@@ -206,11 +200,6 @@ export function Roadmaps() {
 
   if (error) {
     return <div>{error}</div>;
-  }
-
-  // If a roadmap is selected, show the milestones view
-  if (selectedRoadmap) {
-    return <Milestones roadmap={selectedRoadmap} onBack={navigateBackToRoadmaps} />;
   }
 
   return (

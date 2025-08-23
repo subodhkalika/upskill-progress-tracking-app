@@ -1,51 +1,55 @@
+import { useState, useEffect } from 'react';
 import { 
   CheckCircle,
   Target,
   BookOpen,
   FileText,
   Video,
-  CheckSquare,
   ExternalLink
 } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import type { Task } from '../types/milestones';
+import { apiClient } from '../utils/api';
+import type { Task } from '../types';
+import { ResourceType } from '../types';
+import { getPriorityColor, getResourceStatusColor } from '../utils/badgeStyle';
 
 interface TaskDetailsProps {
-  task: Task;
+  taskId: string;
 }
 
-export function TaskDetails({ task }: TaskDetailsProps) {
-  // Helper functions
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+export function TaskDetails({ taskId }: TaskDetailsProps) {
+  const [task, setTask] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getResourceIcon = (type: string) => {
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const data = await apiClient.get(`/api/tasks/${taskId}`);
+        setTask(data);
+      } catch (err) {
+        setError('Failed to fetch task details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
+  }, [taskId]);
+
+  /**
+  * Get the icon for a resource type
+  * @param type - The type of the resource
+  * @returns The icon for the resource type
+  */
+  const getResourceIcon = (type: ResourceType) => {
     switch (type) {
-      case 'video': return <Video className="w-4 h-4" />;
-      case 'article': return <FileText className="w-4 h-4" />;
-      case 'documentation': return <BookOpen className="w-4 h-4" />;
-      case 'exercise': return <CheckSquare className="w-4 h-4" />;
-      case 'quiz': return <Target className="w-4 h-4" />;
+      case ResourceType.VIDEO: return <Video className="w-4 h-4" />;
+      case ResourceType.ARTICLE: return <FileText className="w-4 h-4" />;
+      case ResourceType.BOOK: return <BookOpen className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const getResourceTypeColor = (type: string) => {
-    switch (type) {
-      case 'video': return 'bg-red-100 text-red-800 border-red-200';
-      case 'article': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'documentation': return 'bg-green-100 text-green-800 border-green-200';
-      case 'exercise': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'quiz': return 'bg-orange-100 text-orange-800 border-orange-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -59,24 +63,28 @@ export function TaskDetails({ task }: TaskDetailsProps) {
     return new Date(dateString) < new Date();
   };
 
+  if (loading) return <div>Loading task details...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
+  if (!task) return <div>Task not found.</div>;
+
   return (
     <div className="space-y-6">
       <div>
         <div className="flex items-center space-x-2 mb-3">
-          {task.completed ? (
+          {task.status === 'COMPLETED' ? (
             <CheckCircle className="w-5 h-5 text-green-600" />
           ) : (
             <Target className="w-5 h-5 text-blue-600" />
           )}
           <Badge className={`text-sm border ${getPriorityColor(task.priority)}`} variant="outline">
-            {task.priority} priority
+            {task.priority.toLowerCase()} priority
           </Badge>
-          <Badge variant={task.completed ? "default" : "secondary"} className="text-sm">
-            {task.completed ? 'Completed' : 'In Progress'}
+          <Badge variant={task.status === 'COMPLETED' ? "default" : "secondary"} className="text-sm">
+            {task.status.replace('_', ' ').toLowerCase()}
           </Badge>
         </div>
         
-        <h2 className="text-xl font-semibold text-foreground mb-3">{task.title}</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-3">{task.name}</h2>
         <p className="text-muted-foreground leading-relaxed">{task.description}</p>
       </div>
 
@@ -84,11 +92,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Estimated Time</span>
-            <span className="text-sm font-medium">{task.estimatedTime}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Time Spent</span>
-            <span className="text-sm font-medium">{task.timeSpent}</span>
+            <span className="text-sm font-medium">{task.estimatedTime}h</span>
           </div>
         </div>
         
@@ -110,11 +114,11 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       <div>
         <h3 className="font-semibold text-foreground mb-4 flex items-center">
           <BookOpen className="w-4 h-4 mr-2" />
-          Learning Resources ({task.resources.length})
+          Learning Resources ({task?.resources?.length})
         </h3>
         
         <div className="space-y-3">
-          {task.resources.map((resource) => (
+          {task?.resources?.map((resource) => (
             <Card key={resource.id} className="hover:shadow-sm transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
@@ -124,26 +128,26 @@ export function TaskDetails({ task }: TaskDetailsProps) {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium text-sm text-foreground truncate">{resource.title}</h4>
-                        <Badge className={`text-xs border ${getResourceTypeColor(resource.type)}`} variant="outline">
-                          {resource.type}
-                        </Badge>
-                        {resource.duration && (
-                          <Badge variant="secondary" className="text-xs">
-                            {resource.duration}
-                          </Badge>
-                        )}
-                      </div>
-                      
+                      <h4 className="font-medium text-sm text-foreground truncate mb-2">{resource.title}</h4>
                       {resource.description && (
                         <p className="text-xs text-muted-foreground mb-2">{resource.description}</p>
                       )}
                       
+                      
                       <div className="flex items-center justify-between">
-                        <Badge variant={resource.completed ? "default" : "secondary"} className="text-xs">
-                          {resource.completed ? 'Completed' : 'Not Started'}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">
+                            {resource.type.toLowerCase()}
+                          </Badge>
+                          {resource.duration && (
+                            <Badge variant="secondary" className="text-xs">
+                              {resource.duration} min
+                            </Badge>
+                          )}
+                          <Badge className={`text-xs border ${getResourceStatusColor(resource.status)}`} variant="outline">
+                            {resource.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        </div>
                         
                         <div className="flex items-center space-x-2">
                           {resource.url && (
@@ -152,8 +156,8 @@ export function TaskDetails({ task }: TaskDetailsProps) {
                               Open
                             </Button>
                           )}
-                          <Button variant={resource.completed ? "outline" : "default"} size="sm">
-                            {resource.completed ? 'Review' : 'Start'}
+                          <Button variant={resource.status === 'COMPLETED' ? "outline" : "default"} size="sm">
+                            {resource.status === 'COMPLETED' ? 'Review' : 'Start'}
                           </Button>
                         </div>
                       </div>

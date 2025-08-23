@@ -11,15 +11,19 @@ import {
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import type { Milestone, Task } from '../types/milestones';
+import { MilestoneStatus, type Milestone } from '../types/milestones';
+import { type Task } from '../types';
+import { TaskStatus } from '../types';
+import { formatTime } from '../utils/time';
+import { getPriorityColor, getStatusColor, getStatusIconColor, getTimelinePointStyle } from '../utils/badgeStyle';
 
 interface MilestoneItemProps {
   milestone: Milestone;
   isLast: boolean;
   isExpanded: boolean;
-  onToggle: (milestoneId: number) => void;
+  onToggle: (milestoneId: string) => void;
   onTaskClick: (task: Task) => void;
-  getTasksForMilestone: (milestoneId: number) => Task[];
+  getTasksForMilestone: (milestoneId: string) => Task[];
 }
 
 export function MilestoneItem({ 
@@ -31,44 +35,25 @@ export function MilestoneItem({
   getTasksForMilestone 
 }: MilestoneItemProps) {
   const milestoneTasks = getTasksForMilestone(milestone.id);
-  const canExpand = milestone.status !== 'locked' && milestoneTasks.length > 0;
+  const canExpand = milestone.status !== MilestoneStatus.LOCKED && milestoneTasks.length > 0;
 
-  // Helper functions
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'active': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'locked': return 'bg-gray-100 text-gray-600 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
 
-  const getStatusIcon = (status: string, progress?: number) => {
-    if (status === 'completed' || progress === 100) {
-      return <CheckCircle className="w-4 h-4 text-green-600" />;
-    } else if (status === 'active') {
-      return <Play className="w-4 h-4 text-blue-600" />;
-    } else if (status === 'locked') {
-      return <Target className="w-4 h-4 text-gray-400" />;
+  const getStatusIcon = (status: typeof MilestoneStatus[keyof typeof MilestoneStatus]) => {
+    if (status === MilestoneStatus.COMPLETED) {
+      return <CheckCircle className={`w-4 h-4 ${getStatusIconColor(status)}`} />;
+    } else if (status === MilestoneStatus.ACTIVE) {
+      return <Play className={`w-4 h-4 ${getStatusIconColor(status)}`} />;
+    } else if (status === MilestoneStatus.LOCKED) {
+      return <Target className={`w-4 h-4 ${getStatusIconColor(status)}`} />;
     }
-    return <Target className="w-4 h-4 text-gray-600" />;
-  };
-
-  const getTimelinePointStyle = () => {
-    switch (milestone.status) {
-      case 'completed':
-        return 'bg-green-100 border-green-200 shadow-green-200/50';
-      case 'active':
-        return 'bg-blue-100 border-blue-200 shadow-blue-200/50';
-      case 'locked':
-        return 'bg-gray-100 border-gray-200 shadow-gray-200/50';
-      default:
-        return 'bg-gray-100 border-gray-200 shadow-gray-200/50';
-    }
-  };
+    return <Target className={`w-4 h-4 ${getStatusIconColor(status)}`} />;
+};
+  
 
   const getDateDisplay = () => {
-    if (!milestone.dueDate) return milestone.estimatedTime;
+    if (!milestone.dueDate) {
+      return formatTime(milestone.tasks.reduce((acc, task) => acc + (task.estimatedTime || 0), 0))
+    };
     
     const now = new Date();
     const dueDate = new Date(milestone.dueDate);
@@ -103,8 +88,8 @@ export function MilestoneItem({
       
       {/* Timeline point */}
       <div className="relative flex items-start">
-        <div className={`relative z-10 w-12 h-12 rounded-full border-4 shadow-lg ${getTimelinePointStyle()} flex items-center justify-center flex-shrink-0`}>
-          {getStatusIcon(milestone.status, milestone.progress)}
+        <div className={`relative z-10 w-12 h-12 rounded-full border-4 shadow-lg ${getTimelinePointStyle(milestone.status)} flex items-center justify-center flex-shrink-0`}>
+          {getStatusIcon(milestone.status)}
         </div>
         
         {/* Timeline content */}
@@ -139,9 +124,9 @@ export function MilestoneItem({
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <span className="flex items-center">
                           <CheckSquare className="w-4 h-4 mr-1" />
-                          {milestone.completedTasks}/{milestone.totalTasks} tasks
+                          {milestone.tasks.filter(task => task.status === TaskStatus.COMPLETED).length}/{milestone.tasks.length} tasks
                         </span>
-                        <span>{milestone.progress}% complete</span>
+                        <span>{milestone.tasks.filter(task => task.status === TaskStatus.COMPLETED).length / milestone.tasks.length * 100}% complete</span>
                       </div>
                       
                       {canExpand && (
@@ -158,7 +143,7 @@ export function MilestoneItem({
                     
                     {/* Progress bar */}
                     <div className="mt-3">
-                      <Progress value={milestone.progress} className="h-2" />
+                      <Progress value={milestone.tasks.filter(task => task.status === TaskStatus.COMPLETED).length / milestone.tasks.length * 100} className="h-2" />
                     </div>
                   </div>
                 </div>
@@ -174,7 +159,7 @@ export function MilestoneItem({
                         onClick={() => onTaskClick(task)}
                       >
                         <div className="flex items-center space-x-3 flex-1">
-                          {task.completed ? (
+                          {task.status === TaskStatus.COMPLETED ? (
                             <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
                           ) : (
                             <Target className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -182,7 +167,7 @@ export function MilestoneItem({
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-1">
-                              <h4 className="font-medium text-sm text-foreground truncate">{task.title}</h4>
+                              <h4 className="font-medium text-sm text-foreground truncate">{task.name}</h4>
                               <Badge className={`text-xs border ${getPriorityColor(task.priority)}`} variant="outline">
                                 {task.priority}
                               </Badge>
@@ -191,7 +176,7 @@ export function MilestoneItem({
                             <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                               <span className="flex items-center">
                                 <Clock className="w-3 h-3 mr-1" />
-                                {task.estimatedTime}
+                                {formatTime(task.estimatedTime || 0)}
                               </span>
                               {task.dueDate && (
                                 <span className={`flex items-center ${isOverdue(task.dueDate) ? 'text-red-500' : ''}`}>
@@ -199,7 +184,7 @@ export function MilestoneItem({
                                   {formatDate(task.dueDate)}
                                 </span>
                               )}
-                              <span>{task.resources.length} resources</span>
+                              <span>{task.resources?.length || 0} resources</span>
                             </div>
                           </div>
                         </div>
@@ -216,14 +201,4 @@ export function MilestoneItem({
       </div>
     </div>
   );
-}
-
-// Helper function for priority color (moved here since it's only used in this component)
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case 'high': return 'bg-red-100 text-red-800 border-red-200';
-    case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'low': return 'bg-green-100 text-green-800 border-green-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
 }

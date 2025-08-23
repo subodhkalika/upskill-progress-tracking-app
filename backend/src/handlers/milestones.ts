@@ -30,13 +30,16 @@ export const createMilestone = async (request: FastifyRequest<{ Body: CreateMile
   }
 };
 
-export const getAllMilestones = async (request: FastifyRequest, reply: FastifyReply) => {
+export const getAllMilestones = async (request: FastifyRequest<{ Querystring: { roadmapId?: string } }>, reply: FastifyReply) => {
   const userId = request.user.id;
+  const { roadmapId } = request.query;
+
   try {
     const milestones = await request.server.prisma.milestone.findMany({
       where: {
         roadmap: {
           userId,
+          id: roadmapId,
         },
       },
       orderBy: { createdAt: 'asc' },

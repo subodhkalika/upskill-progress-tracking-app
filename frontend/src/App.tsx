@@ -6,6 +6,7 @@ import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { Dashboard } from './components/Dashboard';
 import { Roadmaps } from './components/Roadmaps';
+import { Milestones } from './components/milestones';
 import { TaskManager } from './components/TaskManager';
 import { ResourceLibrary } from './components/ResourceLibrary';
 import { Analytics } from './components/Analytics';
@@ -47,6 +48,7 @@ export default function App() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="roadmaps" element={<Roadmaps />} />
+            <Route path="roadmaps/:roadmapId/milestones" element={<Milestones />} />
             <Route path="tasks" element={<TaskManager />} />
             <Route path="library" element={<ResourceLibrary />} />
             <Route path="analytics" element={<Analytics />} />

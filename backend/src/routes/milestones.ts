@@ -9,7 +9,7 @@ export default async function (fastify: FastifyInstance) {
     milestoneHandlers.createMilestone
   );
 
-  fastify.get(
+  fastify.get<{ Querystring: { roadmapId?: string } }>(
     '/',
     { onRequest: [fastify.authenticate] },
     milestoneHandlers.getAllMilestones

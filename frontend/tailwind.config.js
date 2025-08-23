@@ -3,6 +3,9 @@ export default {
   content: ["./src/**/*.{js,ts,jsx,tsx}"], // Adjust based on your project structure
   theme: {
     extend: {
+      outlineColor: {
+        ring: "hsl(var(--ring))",
+      },
       colors: {
         border: 'var(--border)',
         input: 'var(--input)',

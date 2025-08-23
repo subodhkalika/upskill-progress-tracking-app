@@ -1,36 +1,29 @@
-export interface Milestone {
-  id: number;
-  title: string;
-  description: string;
-  progress: number;
-  totalTasks: number;
-  completedTasks: number;
-  estimatedTime: string;
-  timeSpent: string;
-  status: 'completed' | 'active' | 'locked';
-  dueDate?: string;
-  roadmapId: number;
-}
+import type { Task } from '.';
 
-export interface Task {
-  id: number;
+export const MilestoneStatus = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  LOCKED: 'LOCKED',
+} as const;
+
+export interface Milestone {
+  id: string;
   title: string;
   description: string;
+  status: typeof MilestoneStatus[keyof typeof MilestoneStatus];
   completed: boolean;
-  estimatedTime: string;
-  timeSpent: string;
-  priority: 'high' | 'medium' | 'low';
   dueDate?: string;
-  milestoneId: number;
-  resources: Resource[];
+  roadmapId: string;
+  tasks: Task[];
 }
 
 export interface Resource {
-  id: number;
+  id: string;
   title: string;
-  type: 'video' | 'article' | 'documentation' | 'exercise' | 'quiz';
+  type: 'VIDEO' | 'ARTICLE' | 'DOCUMENTATION' | 'OTHER';
   url?: string;
-  duration?: string;
+  duration?: number;
   completed: boolean;
   description?: string;
 }
