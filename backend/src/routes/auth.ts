@@ -1,21 +1,24 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import { registerUser, logoutUser, getProfile, loginUser } from '../handlers/auth';
-import { RegisterBody, LoginBody } from '../interfaces/user';
+import { logoutUser, getProfile, loginUser, refreshAccessToken, signupUser } from '../handlers/auth';
+import { LoginBody, SignupBody } from '../interfaces/user';
 import { FastifyPluginAsync } from 'fastify';
 
 /**
  * Authentication routes plugin for Fastify.
- * Defines endpoints for user registration, login, logout, and profile retrieval.
+ * Defines endpoints for user login, logout, token refresh and profile retrieval.
  */
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance, options: FastifyPluginOptions) => {
-  // Route for user registration
-  fastify.post<{ Body: RegisterBody }>('/register', registerUser);
+  // Route for user signup
+  fastify.post<{ Body: SignupBody }>('/signup', signupUser);
 
   // Route for user login
   fastify.post<{ Body: LoginBody }>('/login', loginUser);
 
+  // Route to refresh access token
+  fastify.post('/refresh', refreshAccessToken);
+
   // Route for user logout
-  fastify.post('/logout', logoutUser);
+  fastify.post('/logout', { onRequest: [fastify.authenticate] }, logoutUser);
 
   // Protected route to get user profile
   // This route requires authentication.

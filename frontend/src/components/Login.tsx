@@ -17,6 +17,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
+import { apiClient } from '../utils/api';
 
 export function Login() {
   const navigate = useNavigate();
@@ -26,17 +27,25 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await apiClient.post('/api/auth/login', { email, password });
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        login();
+        navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred during login.');
+    } finally {
       setIsLoading(false);
-      login();
-      navigate('/');
-    }, 1000);
+    }
   };
 
   return (
@@ -101,6 +110,7 @@ export function Login() {
             </CardHeader>
             
             <CardContent className="space-y-6">
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>

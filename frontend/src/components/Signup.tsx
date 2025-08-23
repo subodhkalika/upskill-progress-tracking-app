@@ -19,6 +19,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
+import { apiClient } from '../utils/api';
 
 export function Signup() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -57,13 +59,29 @@ export function Signup() {
     if (!agreedToTerms) return;
     
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      await apiClient.post('/api/auth/signup', {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+      });
+      // After successful signup, log the user in
+      const response = await apiClient.post('/api/auth/login', {
+        email: formData.email,
+        password: formData.password,
+      });
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        login();
+        navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred during signup.');
+    } finally {
       setIsLoading(false);
-      login();
-      navigate('/');
-    }, 1500);
+    }
   };
 
   return (
@@ -147,6 +165,7 @@ export function Signup() {
             </CardHeader>
             
             <CardContent className="space-y-6">
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">

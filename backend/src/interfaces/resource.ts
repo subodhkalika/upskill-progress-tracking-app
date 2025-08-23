@@ -1,9 +1,21 @@
-import { ResourceType } from '@prisma/client';
+import { ResourceType, ResourceStatus } from '@prisma/client';
 
-export interface ResourceInput {
+export interface CreateResourceInput {
   title: string;
-  url: string;
+  description?: string;
   type: ResourceType;
-  notes?: string;
-  roadmapId?: string;
+  status?: ResourceStatus;
+  duration?: number;
+  rating?: number;
+  tags?: string[];
+}
+
+export interface UpdateResourceInput {
+  title?: string;
+  description?: string;
+  type?: ResourceType;
+  status?: ResourceStatus;
+  duration?: number;
+  rating?: number;
+  tags?: string[];
 }

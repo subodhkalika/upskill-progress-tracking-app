@@ -5,10 +5,11 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "nodemon --watch prisma/schema.prisma --exec 'npx prisma generate && ts-node src/app.ts'",
+    "dev": "nodemon --watch prisma/schema.prisma --watch --ext ts --exec 'npx prisma generate && ts-node src/app.ts'",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",
-    "prisma:studio": "npx prisma studio"
+    "prisma:studio": "npx prisma studio",
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "author": "",
   "license": "ISC",

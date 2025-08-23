@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiClient } from '../utils/api';
+import type { User } from '../types'; // Assuming you have a User type defined
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  user: User | null;
   login: () => void;
   logout: () => void;
 }
@@ -18,27 +21,55 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check localStorage for existing auth state on mount
   useEffect(() => {
-    const authState = localStorage.getItem('isAuthenticated');
-    if (authState === 'true') {
-      setIsAuthenticated(true);
-    }
+    const checkAuthStatus = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          const userData = await apiClient.get('/api/auth/profile');
+          setUser(userData.user);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Failed to fetch user profile', error);
+          localStorage.removeItem('accessToken');
+          setIsAuthenticated(false);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuthStatus();
   }, []);
 
-  const login = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
+  const login = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      try {
+        const userData = await apiClient.get('/api/auth/profile');
+        setUser(userData.user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to fetch user profile on login', error);
+      }
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('accessToken');
     setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
+    setUser(null);
   };
 
+  if (loading) {
+    // You might want to render a loading spinner here
+    return <div>Loading...</div>;
+  }
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,8 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Dashboard() {
+  const { user } = useAuth();
+
   const activeRoadmaps = [
     { id: 1, title: 'Backend Development', progress: 65, milestones: 8, completed: 5, timeSpent: '28.5h', lastActivity: '2h ago' },
     { id: 2, title: 'Cloud Architecture', progress: 30, milestones: 12, completed: 4, timeSpent: '18.3h', lastActivity: '1 day ago' },
@@ -52,7 +55,7 @@ export function Dashboard() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Welcome Section */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-semibold text-foreground mb-2">Welcome back, Alex! 👋</h1>
+        <h1 className="text-2xl lg:text-3xl font-semibold text-foreground mb-2">Welcome back, {user?.name || 'Learner'}! 👋</h1>
         <p className="text-muted-foreground">Here's your learning progress and what's next on your journey.</p>
       </div>
 

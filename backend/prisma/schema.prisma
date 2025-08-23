@@ -7,71 +7,198 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
-  // New relations
-  roadmaps     Roadmap[]
-  resources    Resource[]
-  tasks        Task[]
-}
-
-model Resource {
-  id          String      @id @default(uuid())
-  title       String
-  url         String
-  type        ResourceType
-  completed   Boolean     @default(false)
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  // Relations
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  roadmapId   String?
-  roadmap     Roadmap?    @relation(fields: [roadmapId], references: [id])
-  
-  tasks       Task[]
-}
-
-model Roadmap {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  isPublic    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  resources   Resource[]
-}
-
-model Task {
-  id          String    @id @default(uuid())
-  title       String
-  completed   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  resourceId  String?
-  resource    Resource? @relation(fields: [resourceId], references: [id])
-  
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
 }
 
 enum ResourceType {
   VIDEO
   BOOK
   ARTICLE
-  COURSE
   OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ResourceStatus {
+  NOT_STARTED
+  COMPLETED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  LOCKED
+}
+
+enum RoadmapStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String          @db.VarChar(255)
+  name           String
+  profilePicture String?
+  subscription   SubscriptionPlan @default(FREE)
+
+  learningStats  LearningStats?
+  roadmaps       Roadmap[]
+  tasks          Task[]
+  achievements   Achievement[]
+  resources      Resource[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model LearningStats {
+  id               String   @id @default(uuid())
+  user             User     @relation(fields: [userId], references: [id])
+  userId           String   @unique
+
+  totalHours       Float    @default(0)
+  weeklyGoal       Float    @default(0)
+  currentWeekHours Float    @default(0)
+  dayStreak        Int      @default(0)
+  bestStreak       Int      @default(0)
+}
+
+model Roadmap {
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+
+  title          String
+  description    String
+  status         RoadmapStatus   @default(PLANNED)
+  timeSpent      Float        @default(0)
+  lastUpdated    DateTime     @default(now())
+
+  milestones     Milestone[]
+  skills         Skill[]      @relation("RoadmapSkills")
+  tags           Tag[]        @relation("RoadmapTags")
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Milestone {
+  id             String       @id @default(uuid())
+  roadmap        Roadmap      @relation(fields: [roadmapId], references: [id])
+  roadmapId      String
+
+  title          String
+  description    String?
+  status         MilestoneStatus   @default(PLANNED)
+  dueDate        DateTime?
+  completed      Boolean      @default(false)
+
+  tasks          Task[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+
+model Task {
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+
+  milestone      Milestone?   @relation(fields: [milestoneId], references: [id])
+  milestoneId    String?
+
+  name           String
+  description    String?
+  topic          String?
+  status         TaskStatus   @default(PENDING)
+  priority       TaskPriority
+  dueDate        DateTime?
+  estimatedTime  Float        @default(0)
+  progress       Float        @default(0)
+
+  resources      Resource[]   @relation("TaskResources")
+  skills         Skill[]      @relation("TaskSkills")
+  timeLogs       TimeLog[]
+  tags           Tag[]        @relation("TaskTags")
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+
+model TimeLog {
+  id        String   @id @default(uuid())
+  task      Task     @relation(fields: [taskId], references: [id])
+  taskId    String
+
+  duration  Float
+  note      String?
+  loggedAt  DateTime @default(now())
+}
+
+
+model Resource {
+  id          String           @id @default(uuid())
+  user        User             @relation(fields: [userId], references: [id])
+  userId      String
+
+  title       String
+  description String?
+  type        ResourceType
+  status      ResourceStatus   @default(NOT_STARTED)
+  duration    Float?
+  rating      Float?
+
+  skills      Skill[]          @relation("ResourceSkills")
+  categories  Skill[]          @relation("ResourceCategories")
+  tasks       Task[]           @relation("TaskResources")
+  tags        Tag[]            @relation("ResourceTags")
+
+  addedOn     DateTime         @default(now())
+}
+
+model Skill {
+  id          String     @id @default(uuid())
+  name        String     @unique
+
+  roadmaps    Roadmap[]  @relation("RoadmapSkills")
+  tasks       Task[]     @relation("TaskSkills")
+  resources   Resource[] @relation("ResourceSkills")
+  categories  Resource[] @relation("ResourceCategories")
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+
+  title       String
+  description String
+  icon        String?
+  earnedOn    DateTime @default(now())
+}
+
+model Tag {
+  id        String      @id @default(uuid())
+  name      String      @unique
+
+  tasks     Task[]      @relation("TaskTags")
+  resources Resource[]  @relation("ResourceTags")
+  roadmaps  Roadmap[]   @relation("RoadmapTags")
 }

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -25,99 +26,56 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { apiClient } from '../utils/api';
+import type { Roadmap } from '../types';
+import { CreateRoadmapModal } from './CreateRoadmapModal';
 
 export function Roadmaps() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const roadmaps = [
-    {
-      id: 1,
-      title: 'Backend Development Mastery',
-      description: 'From basics to advanced backend development with Node.js, Express, and databases',
-      progress: 65,
-      totalMilestones: 12,
-      completedMilestones: 8,
-      estimatedTime: '6 weeks',
-      timeSpent: '28.5h',
-      category: 'Backend',
-      lastUpdated: '2 days ago',
-      status: 'active',
-      tags: ['Node.js', 'Express', 'Database']
-    },
-    {
-      id: 2,
-      title: 'Cloud Architecture with AWS',
-      description: 'Design and implement scalable cloud solutions using Amazon Web Services',
-      progress: 30,
-      totalMilestones: 15,
-      completedMilestones: 4,
-      estimatedTime: '8 weeks',
-      timeSpent: '18.3h',
-      category: 'Cloud',
-      lastUpdated: '1 day ago',
-      status: 'active',
-      tags: ['AWS', 'Cloud', 'Architecture']
-    },
-    {
-      id: 3,
-      title: 'System Design Fundamentals',
-      description: 'Learn to design distributed systems, microservices, and handle scale',
-      progress: 85,
-      totalMilestones: 8,
-      completedMilestones: 7,
-      estimatedTime: '4 weeks',
-      timeSpent: '22.1h',
-      category: 'System Design',
-      lastUpdated: '5 hours ago',
-      status: 'active',
-      tags: ['System Design', 'Scalability']
-    },
-    {
-      id: 4,
-      title: 'React Advanced Patterns',
-      description: 'Master advanced React concepts, hooks, performance optimization, and testing',
-      progress: 100,
-      totalMilestones: 10,
-      completedMilestones: 10,
-      estimatedTime: '5 weeks',
-      timeSpent: '35.2h',
-      category: 'Frontend',
-      lastUpdated: '1 week ago',
-      status: 'completed',
-      tags: ['React', 'Frontend', 'JavaScript']
-    },
-    {
-      id: 5,
-      title: 'DevOps Pipeline Setup',
-      description: 'CI/CD, containerization, infrastructure as code, and monitoring',
-      progress: 0,
-      totalMilestones: 14,
-      completedMilestones: 0,
-      estimatedTime: '7 weeks',
-      timeSpent: '0h',
-      category: 'DevOps',
-      lastUpdated: 'Never',
-      status: 'planned',
-      tags: ['DevOps', 'CI/CD', 'Docker']
-    },
-    {
-      id: 6,
-      title: 'Machine Learning Basics',
-      description: 'Introduction to ML algorithms, data processing, and Python libraries',
-      progress: 45,
-      totalMilestones: 11,
-      completedMilestones: 5,
-      estimatedTime: '6 weeks',
-      timeSpent: '15.7h',
-      category: 'AI/ML',
-      lastUpdated: '3 days ago',
-      status: 'active',
-      tags: ['Python', 'ML', 'Data Science']
-    }
-  ];
+  useEffect(() => {
+    const fetchRoadmaps = async () => {
+      try {
+        const data = await apiClient.get('/api/roadmaps');
+        // Assuming the API returns an array of roadmaps
+        // We'll add some frontend-specific calculations here
+        const processedRoadmaps = data.map((roadmap: any) => ({
+          ...roadmap,
+          progress: Math.floor((roadmap.milestones?.filter((m: any) => m.completed)?.length / roadmap.milestones?.length) * 100) || 0,
+          totalMilestones: roadmap.milestones?.length ?? 0,
+          completedMilestones: roadmap.milestones?.filter((m: any) => m.completed)?.length ?? 0,
+          tags: roadmap.skills?.map((s: any) => s.name),
+        }));
+        setRoadmaps(processedRoadmaps);
+      } catch (err) {
+        setError('Failed to fetch roadmaps.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchRoadmaps();
+  }, []);
+
+  const handleRoadmapCreated = (newRoadmap: Roadmap) => {
+    setRoadmaps(prevRoadmaps => [
+      ...prevRoadmaps,
+      {
+        ...newRoadmap,
+        progress: 0,
+        totalMilestones: 0,
+        completedMilestones: 0,
+        tags: [],
+      }
+    ]);
+  };
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800 border-green-200';
@@ -136,108 +94,124 @@ export function Roadmaps() {
     return <Target className="w-4 h-4 text-gray-600" />;
   };
 
+  // Filter functions
   const filterRoadmaps = (status: string) => {
     if (status === 'all') return roadmaps;
     return roadmaps.filter(roadmap => roadmap.status === status);
   };
 
   const RoadmapCard = ({ roadmap }: { roadmap: any }) => (
-    <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
-      <CardContent className="p-4 lg:p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            {getStatusIcon(roadmap.status, roadmap.progress)}
-            <Badge className={`text-xs border ${getStatusColor(roadmap.status)}`} variant="outline">
-              {roadmap.status}
-            </Badge>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit Roadmap</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="mb-4">
-          <h3 className="font-semibold text-base lg:text-lg text-foreground mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-            {roadmap.title}
-          </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{roadmap.description}</p>
-          
-          <div className="flex flex-wrap gap-1 mb-3">
-            {roadmap.tags.slice(0, 2).map((tag: string, index: number) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {tag}
+    <Link to={`/roadmaps/${roadmap.id}/milestones`} className="block">
+      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group h-full">
+        <CardContent className="p-4 lg:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              {getStatusIcon(roadmap.status, roadmap.progress)}
+              <Badge className={`text-xs border ${getStatusColor(roadmap.status)}`} variant="outline">
+                {roadmap.status}
               </Badge>
-            ))}
-            {roadmap.tags.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{roadmap.tags.length - 2}
-              </Badge>
-            )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Edit Roadmap</DropdownMenuItem>
+                <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
 
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{roadmap.progress}%</span>
+          <div className="mb-4">
+            <h3 className="font-semibold text-base lg:text-lg text-foreground mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+              {roadmap.title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{roadmap.description}</p>
+            
+            <div className="flex flex-wrap gap-1 mb-3">
+              {roadmap.tags.slice(0, 2).map((tag: string, index: number) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {roadmap.tags.length > 2 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{roadmap.tags.length - 2}
+                </Badge>
+              )}
+            </div>
           </div>
-          <Progress value={roadmap.progress} className="h-2" />
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 text-sm text-muted-foreground mb-4">
-          <div className="flex items-center">
-            <Target className="w-4 h-4 mr-2" />
-            <span>{roadmap.completedMilestones}/{roadmap.totalMilestones} milestones</span>
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{roadmap.progress}%</span>
+            </div>
+            <Progress value={roadmap.progress} className="h-2" />
           </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
-            <span>{roadmap.timeSpent} spent</span>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Updated {roadmap.lastUpdated}</span>
-          <div className="space-x-2">
-            {roadmap.status === 'active' && (
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                Continue
-              </Button>
-            )}
-            {roadmap.status === 'planned' && (
-              <Button size="sm" variant="outline">
-                Start Learning
-              </Button>
-            )}
-            {roadmap.status === 'completed' && (
-              <Button size="sm" variant="outline">
-                Review
-              </Button>
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 text-sm text-muted-foreground mb-4">
+            <div className="flex items-center">
+              <Target className="w-4 h-4 mr-2" />
+              <span>{roadmap.completedMilestones}/{roadmap.totalMilestones} milestones</span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              <span>{roadmap.timeSpent}h spent</span>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Updated {new Date(roadmap.lastUpdated).toLocaleDateString()}</span>
+            <div className="space-x-2">
+              {roadmap.status === 'active' && (
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  Continue
+                </Button>
+              )}
+              {roadmap.status === 'planned' && (
+                <Button size="sm" variant="outline">
+                  Start Learning
+                </Button>
+              )}
+              {roadmap.status === 'completed' && (
+                <Button size="sm" variant="outline">
+                  Review
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
+      <CreateRoadmapModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onRoadmapCreated={handleRoadmapCreated}
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-semibold text-foreground mb-2">Learning Roadmaps</h1>
           <p className="text-muted-foreground">Manage your learning paths and track progress</p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto">
+        <Button className="bg-green-600 hover:bg-green-700 w-full lg:w-auto" onClick={() => setIsModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Create Roadmap
         </Button>
@@ -312,25 +286,25 @@ export function Roadmaps() {
       <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">6</div>
+            <div className="text-2xl font-bold text-foreground">{roadmaps.length}</div>
             <div className="text-sm text-muted-foreground">Total Roadmaps</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">3</div>
+            <div className="text-2xl font-bold text-blue-600">{filterRoadmaps('active').length}</div>
             <div className="text-sm text-muted-foreground">Active</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">1</div>
+            <div className="text-2xl font-bold text-green-600">{filterRoadmaps('completed').length}</div>
             <div className="text-sm text-muted-foreground">Completed</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-600">119.8h</div>
+            <div className="text-2xl font-bold text-gray-600">{roadmaps.reduce((acc, curr) => acc + curr.timeSpent, 0).toFixed(1)}h</div>
             <div className="text-sm text-muted-foreground">Total Time</div>
           </CardContent>
         </Card>
@@ -351,7 +325,7 @@ export function Roadmaps() {
               .filter(roadmap => 
                 roadmap.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 roadmap.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                roadmap.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+                (roadmap.tags && roadmap.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
               )
               .map(roadmap => <RoadmapCard key={roadmap.id} roadmap={roadmap} />)}
           </div>
